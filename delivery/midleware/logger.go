@@ -75,12 +75,16 @@ func (l *AppLoggers) LoggingMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 func (l *AppLoggers) LoggingResponseMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		res := c.Response()
-		res.After(func() {
-			responseWrapper := NewResponseWriterWrapper(res.Writer)
-			l.responseLogger.Infof(responseWrapper.String())
-		})
+		response := c.Response()
+		originalWriter := response.Writer
+		responseWrapper := NewResponseWriterWrapper(originalWriter)
+		response.Writer = &responseWrapper
+
+		// Выполняем следующий обработчик
 		err := next(c)
+		//response.After(func() {
+		l.responseLogger.Infof(responseWrapper.String())
+		//})
 		if err != nil {
 			return err
 		}
@@ -105,8 +109,15 @@ func NewResponseWriterWrapper(w http.ResponseWriter) ResponseWriterWrapper {
 }
 
 func (rww *ResponseWriterWrapper) Write(buf []byte) (int, error) {
-	rww.body.Write(buf)     // Записываем в тело
-	return rww.w.Write(buf) // Записываем в http.ResponseWriter
+	// Сначала записываем данные в локальный буфер
+	n, err := rww.body.Write(buf)
+	if err != nil {
+		return n, err // Возвращаем ошибку, если запись в буфер не удалась
+	}
+
+	// Затем записываем данные в оригинальный ResponseWriter
+	n, err = rww.w.Write(buf)
+	return n, err // Возвращаем количество записанных байт и ошибку (если есть)
 }
 
 func (rww *ResponseWriterWrapper) Header() http.Header {
@@ -123,12 +134,16 @@ func (rww *ResponseWriterWrapper) String() string {
 	buf.WriteString("\nResponse: \n")
 
 	buf.WriteString("Headers:")
-	for k, v := range rww.w.Header() {
-		buf.WriteString(fmt.Sprintf("%s: %v\n", k, v))
+	headers, err := utils.AutoFormatJSON(rww.Header())
+	if err != nil {
+		appLoggers.responseLogger.Errorf("Error formating headers: %v", err)
 	}
-
+	buf.WriteString(headers + "\n")
 	buf.WriteString(fmt.Sprintf("Status Code: %d\n", rww.statusCode))
-	buf.WriteString("Body:")
-	buf.WriteString(rww.body.String())
+	body, err := utils.AutoFormatJSON(rww.body.Bytes())
+	if err != nil {
+		appLoggers.responseLogger.Errorf("Error formating body: %v", err)
+	}
+	buf.WriteString(fmt.Sprintf("Body: %s\n", body))
 	return buf.String()
 }
