@@ -13,8 +13,9 @@ import (
 
 func main() {
 	// Load .env file
-	err := godotenv.Load()
+	err := godotenv.Load("../.env")
 	if err != nil {
+		fmt.Println(err)
 		fmt.Println("Error loading .env file")
 		return
 	}
