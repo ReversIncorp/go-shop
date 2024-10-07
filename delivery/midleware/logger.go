@@ -2,12 +2,11 @@ package midleware
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 	"io"
 	"marketplace/app/utils"
-	"net/http"
+	"marketplace/delivery/wrappers"
 	"sync"
 	"time"
 )
@@ -38,7 +37,7 @@ func AppLoggersSingleton() *AppLoggers {
 	return appLoggers
 }
 
-func (l *AppLoggers) LoggingMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+func (l *AppLoggers) LoggingRequestMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Log Request
 		req := c.Request()
@@ -77,7 +76,7 @@ func (l *AppLoggers) LoggingResponseMiddleware(next echo.HandlerFunc) echo.Handl
 	return func(c echo.Context) error {
 		response := c.Response()
 		originalWriter := response.Writer
-		responseWrapper := NewResponseWriterWrapper(originalWriter)
+		responseWrapper := wrappers.NewResponseWriterWrapper(originalWriter)
 		response.Writer = &responseWrapper
 
 		// Выполняем следующий обработчик
@@ -90,60 +89,4 @@ func (l *AppLoggers) LoggingResponseMiddleware(next echo.HandlerFunc) echo.Handl
 		}
 		return err
 	}
-}
-
-type ResponseWriterWrapper struct {
-	w          http.ResponseWriter
-	body       *bytes.Buffer
-	statusCode int
-}
-
-// NewResponseWriterWrapper создает обертку для http.ResponseWriter
-func NewResponseWriterWrapper(w http.ResponseWriter) ResponseWriterWrapper {
-	var buf bytes.Buffer
-	return ResponseWriterWrapper{
-		w:          w,
-		body:       &buf,
-		statusCode: http.StatusOK,
-	}
-}
-
-func (rww *ResponseWriterWrapper) Write(buf []byte) (int, error) {
-	// Сначала записываем данные в локальный буфер
-	n, err := rww.body.Write(buf)
-	if err != nil {
-		return n, err // Возвращаем ошибку, если запись в буфер не удалась
-	}
-
-	// Затем записываем данные в оригинальный ResponseWriter
-	n, err = rww.w.Write(buf)
-	return n, err // Возвращаем количество записанных байт и ошибку (если есть)
-}
-
-func (rww *ResponseWriterWrapper) Header() http.Header {
-	return rww.w.Header() // Возвращаем заголовки
-}
-
-func (rww *ResponseWriterWrapper) WriteHeader(statusCode int) {
-	rww.statusCode = statusCode   // Устанавливаем статус код
-	rww.w.WriteHeader(statusCode) // Вызываем WriteHeader на http.ResponseWriter
-}
-
-func (rww *ResponseWriterWrapper) String() string {
-	var buf bytes.Buffer
-	buf.WriteString("\nResponse: \n")
-
-	buf.WriteString("Headers:")
-	headers, err := utils.AutoFormatJSON(rww.Header())
-	if err != nil {
-		appLoggers.responseLogger.Errorf("Error formating headers: %v", err)
-	}
-	buf.WriteString(headers + "\n")
-	buf.WriteString(fmt.Sprintf("Status Code: %d\n", rww.statusCode))
-	body, err := utils.AutoFormatJSON(rww.body.Bytes())
-	if err != nil {
-		appLoggers.responseLogger.Errorf("Error formating body: %v", err)
-	}
-	buf.WriteString(fmt.Sprintf("Body: %s\n", body))
-	return buf.String()
 }

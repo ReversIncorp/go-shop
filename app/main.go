@@ -1,19 +1,30 @@
 package main
 
 import (
+	"fmt"
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"marketplace/delivery/handlers"
 	"marketplace/delivery/midleware"
 	"marketplace/internal/data/repository"
 	"marketplace/internal/domain/usecase"
+	"os"
 )
 
 func main() {
+	// Load .env file
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file")
+		return
+	}
 	e := echo.New()
 
 	httpLogger := midleware.AppLoggersSingleton()
-	e.Use(httpLogger.LoggingMiddleware)
-	e.Use(httpLogger.LoggingResponseMiddleware)
+	if os.Getenv("APP_ENV") == "Dev" {
+		e.Use(httpLogger.LoggingRequestMiddleware)
+		e.Use(httpLogger.LoggingResponseMiddleware)
+	}
 
 	// Инициализация репозиториев
 	userRepo := repository.NewUserRepository()       // Репозиторий пользователей
