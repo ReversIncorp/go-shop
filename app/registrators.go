@@ -11,8 +11,11 @@ import (
 	"os"
 )
 
-func registerDependencies(container *dig.Container) error {
-	if err := container.Provide(echo.New()); err != nil {
+func registerDependencies(container *dig.Container, e *echo.Echo) error {
+	// Регистрация *echo.Echo
+	if err := container.Provide(func() *echo.Echo {
+		return e
+	}); err != nil {
 		return err
 	}
 	// Регистрация репозиториев

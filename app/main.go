@@ -17,9 +17,10 @@ func main() {
 	}
 
 	container := dig.New()
-
+	e := echo.New()
+	
 	// Регистрация всех зависимостей
-	if err := registerDependencies(container); err != nil {
+	if err := registerDependencies(container, e); err != nil {
 		fmt.Printf("Failed to register dependencies: %v\n", err)
 		return
 	}
