@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"marketplace/app/utils"
+	"marketplace/pkg/utils"
 	"net/http"
 )
 

@@ -5,8 +5,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 	"io"
-	"marketplace/app/utils"
 	"marketplace/delivery/wrappers"
+	"marketplace/pkg/utils"
 	"sync"
 	"time"
 )
