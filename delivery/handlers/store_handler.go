@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/labstack/echo/v4"
-	"marketplace/internal/domain/models"
+	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/usecase"
 	"net/http"
 )
@@ -19,7 +19,7 @@ func NewStoreHandler(storeUseCase usecase.StoreUseCase) *StoreHandler {
 
 // CreateStore обрабатывает запрос на создание магазина
 func (h *StoreHandler) CreateStore(c echo.Context) error {
-	var store models.Store
+	var store entities.Store
 
 	if err := c.Bind(&store); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
@@ -46,7 +46,7 @@ func (h *StoreHandler) GetStoreByID(c echo.Context) error {
 
 // UpdateStore обрабатывает запрос на обновление магазина
 func (h *StoreHandler) UpdateStore(c echo.Context) error {
-	var store models.Store
+	var store entities.Store
 
 	if err := c.Bind(&store); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})

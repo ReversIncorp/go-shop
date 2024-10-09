@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/labstack/echo/v4"
-	"marketplace/internal/domain/models"
+	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/usecase"
 	"net/http"
 )
@@ -19,7 +19,7 @@ func NewUserHandler(userUseCase usecase.UserUseCase) *UserHandler {
 
 // Register обрабатывает запрос на регистрацию пользователя
 func (h *UserHandler) Register(c echo.Context) error {
-	var user models.User
+	var user entities.User
 
 	if err := c.Bind(&user); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})

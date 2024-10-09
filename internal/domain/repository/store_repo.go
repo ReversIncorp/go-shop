@@ -1,13 +1,13 @@
 package repository
 
 import (
-	"marketplace/internal/domain/models"
+	"marketplace/internal/domain/entities"
 )
 
 type StoreRepository interface {
-	Save(store models.Store) error
-	FindByID(id string) (models.Store, error)
-	Update(store models.Store) error
+	Save(store entities.Store) error
+	FindByID(id string) (entities.Store, error)
+	Update(store entities.Store) error
 	Delete(id string) error
-	FindAll() ([]models.Store, error)
+	FindAll() ([]entities.Store, error)
 }

@@ -1,13 +1,14 @@
-package models
+package entities
 
 import "time"
 
 type Product struct {
-	ID          string
+	ID          uint64
 	Name        string
 	Description string
 	Price       float64
-	StoreID     string
+	OwnerID     uint64
+	StoreID     uint64
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	Status      string // Доступен, Продан и т.д.

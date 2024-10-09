@@ -1,11 +1,11 @@
 package repository
 
 import (
-	"marketplace/internal/domain/models"
+	"marketplace/internal/domain/entities"
 )
 
 type UserRepository interface {
-	Create(user models.User) error
-	FindByEmail(email string) (models.User, error)
-	FindByID(email string) (models.User, error)
+	Create(user entities.User) error
+	FindByEmail(email string) (entities.User, error)
+	FindByID(email string) (entities.User, error)
 }

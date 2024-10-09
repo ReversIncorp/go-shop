@@ -12,7 +12,7 @@ import (
 )
 
 func registerDependencies(container *dig.Container, e *echo.Echo) error {
-	// Регистрация *echo.Echo
+	// Регистрация *echo. Echo
 	if err := container.Provide(func() *echo.Echo {
 		return e
 	}); err != nil {

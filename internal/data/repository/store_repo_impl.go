@@ -2,24 +2,24 @@ package repository
 
 import (
 	"errors"
-	"marketplace/internal/domain/models"
+	"marketplace/internal/domain/entities"
 	repository2 "marketplace/internal/domain/repository"
 	"sync"
 	"time"
 )
 
 type inMemoryStoreRepository struct {
-	stores map[string]models.Store
+	stores map[string]entities.Store
 	mu     sync.Mutex
 }
 
 func NewStoreRepository() repository2.StoreRepository {
 	return &inMemoryStoreRepository{
-		stores: make(map[string]models.Store),
+		stores: make(map[string]entities.Store),
 	}
 }
 
-func (r *inMemoryStoreRepository) Save(store models.Store) error {
+func (r *inMemoryStoreRepository) Save(store entities.Store) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -36,19 +36,19 @@ func (r *inMemoryStoreRepository) Save(store models.Store) error {
 	return nil
 }
 
-func (r *inMemoryStoreRepository) FindByID(id string) (models.Store, error) {
+func (r *inMemoryStoreRepository) FindByID(id string) (entities.Store, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	store, exists := r.stores[id]
 	if !exists {
-		return models.Store{}, errors.New("store not found")
+		return entities.Store{}, errors.New("store not found")
 	}
 
 	return store, nil
 }
 
-func (r *inMemoryStoreRepository) Update(store models.Store) error {
+func (r *inMemoryStoreRepository) Update(store entities.Store) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -77,11 +77,11 @@ func (r *inMemoryStoreRepository) Delete(id string) error {
 	return nil
 }
 
-func (r *inMemoryStoreRepository) FindAll() ([]models.Store, error) {
+func (r *inMemoryStoreRepository) FindAll() ([]entities.Store, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	var stores []models.Store
+	var stores []entities.Store
 	for _, store := range r.stores {
 		stores = append(stores, store)
 	}

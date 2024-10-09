@@ -81,9 +81,10 @@ func (l *AppLoggers) LoggingResponseMiddleware(next echo.HandlerFunc) echo.Handl
 
 		// Выполняем следующий обработчик
 		err := next(c)
-		//response.After(func() {
-		l.responseLogger.Infof(responseWrapper.String())
-		//})
+		// Логируем после обработки ответа
+		response.After(func() {
+			l.responseLogger.Infof(responseWrapper.String())
+		})
 		if err != nil {
 			return err
 		}
