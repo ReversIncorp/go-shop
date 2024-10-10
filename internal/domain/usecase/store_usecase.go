@@ -21,7 +21,7 @@ func (s *StoreUseCase) CreateStore(store entities.Store) error {
 }
 
 // GetStoreByID получает магазин по ID
-func (s *StoreUseCase) GetStoreByID(id string) (entities.Store, error) {
+func (s *StoreUseCase) GetStoreByID(id uint64) (entities.Store, error) {
 	return s.storeRepo.FindByID(id)
 }
 
@@ -31,7 +31,7 @@ func (s *StoreUseCase) UpdateStore(store entities.Store) error {
 }
 
 // DeleteStore удаляет магазин по ID
-func (s *StoreUseCase) DeleteStore(id string) error {
+func (s *StoreUseCase) DeleteStore(id uint64) error {
 	return s.storeRepo.Delete(id)
 }
 

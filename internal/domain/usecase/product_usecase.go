@@ -21,7 +21,7 @@ func (p *ProductUseCase) CreateProduct(product entities.Product) error {
 }
 
 // GetProductByID получает продукт по ID
-func (p *ProductUseCase) GetProductByID(id string) (entities.Product, error) {
+func (p *ProductUseCase) GetProductByID(id uint64) (entities.Product, error) {
 	return p.productRepo.FindByID(id)
 }
 
@@ -31,11 +31,11 @@ func (p *ProductUseCase) UpdateProduct(product entities.Product) error {
 }
 
 // DeleteProduct удаляет продукт по ID
-func (p *ProductUseCase) DeleteProduct(id string) error {
+func (p *ProductUseCase) DeleteProduct(id uint64) error {
 	return p.productRepo.Delete(id)
 }
 
 // GetProductsByStore получает все продукты по ID магазина
-func (p *ProductUseCase) GetProductsByStore(storeID string) ([]entities.Product, error) {
+func (p *ProductUseCase) GetProductsByStore(storeID uint64) ([]entities.Product, error) {
 	return p.productRepo.FindAllByStore(storeID)
 }

@@ -1,4 +1,4 @@
-package main
+package DI
 
 import (
 	"fmt"
@@ -8,14 +8,22 @@ import (
 	"marketplace/delivery/midleware"
 	"marketplace/internal/data/repository"
 	"marketplace/internal/domain/usecase"
+	"marketplace/pkg/utils"
 	"os"
 )
 
-func registerDependencies(container *dig.Container, e *echo.Echo) error {
-	// Регистрация *echo. Echo
-	if err := container.Provide(func() *echo.Echo {
-		return e
-	}); err != nil {
+var container = dig.New()
+
+func Container() *dig.Container {
+	return container
+}
+
+func RegisterDependencies(container *dig.Container) error {
+	if err := container.Provide(utils.AppValidate); err != nil {
+		return err
+	}
+	// Регистрация логгера
+	if err := container.Provide(midleware.AppLoggersSingleton); err != nil {
 		return err
 	}
 	// Регистрация репозиториев
@@ -51,15 +59,10 @@ func registerDependencies(container *dig.Container, e *echo.Echo) error {
 		return err
 	}
 
-	// Регистрация логгера
-	if err := container.Provide(midleware.AppLoggersSingleton); err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func registerMiddleware(container *dig.Container) error {
+func RegisterMiddleware(container *dig.Container, e *echo.Echo) error {
 	// Используем логгер из контейнера
 	var httpLogger *midleware.AppLoggers
 	if err := container.Invoke(func(logger *midleware.AppLoggers) {
@@ -68,12 +71,6 @@ func registerMiddleware(container *dig.Container) error {
 		return fmt.Errorf("failed to invoke logger: %w", err)
 	}
 
-	var e *echo.Echo
-	if err := container.Invoke(func(echo *echo.Echo) {
-		e = echo
-	}); err != nil {
-		return err
-	}
 	// Добавляем midleware для логирования в зависимости от окружения
 	if os.Getenv("APP_ENV") == "Dev" {
 		e.Use(httpLogger.LoggingRequestMiddleware)
@@ -83,7 +80,7 @@ func registerMiddleware(container *dig.Container) error {
 	return nil
 }
 
-func registerRoutes(container *dig.Container) (*echo.Echo, error) {
+func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	// Инициализация HTTP-хэндлеров
 	var userHandler *handlers.UserHandler
 	var productHandler *handlers.ProductHandler
@@ -96,13 +93,7 @@ func registerRoutes(container *dig.Container) (*echo.Echo, error) {
 		storeHandler = sh
 	}); err != nil {
 		fmt.Printf("Failed to invoke handlers: %v\n", err)
-		return nil, err
-	}
-	var e *echo.Echo
-	if err := container.Invoke(func(echo *echo.Echo) {
-		e = echo
-	}); err != nil {
-		return nil, err
+		return err
 	}
 
 	// Регистрация маршрутов для пользователей
@@ -122,5 +113,5 @@ func registerRoutes(container *dig.Container) (*echo.Echo, error) {
 	e.PUT("/stores/:id", storeHandler.UpdateStore)
 	e.DELETE("/stores/:id", storeHandler.DeleteStore)
 	e.GET("/stores", storeHandler.GetAllStores)
-	return e, nil
+	return nil
 }

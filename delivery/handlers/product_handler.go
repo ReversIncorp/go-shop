@@ -5,15 +5,16 @@ import (
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/usecase"
 	"net/http"
+	"strconv"
 )
 
 // ProductHandler обрабатывает HTTP-запросы для продуктов
 type ProductHandler struct {
-	productUseCase usecase.ProductUseCase
+	productUseCase *usecase.ProductUseCase
 }
 
 // NewProductHandler создает новый экземпляр ProductHandler
-func NewProductHandler(productUseCase usecase.ProductUseCase) *ProductHandler {
+func NewProductHandler(productUseCase *usecase.ProductUseCase) *ProductHandler {
 	return &ProductHandler{productUseCase: productUseCase}
 }
 
@@ -35,8 +36,11 @@ func (h *ProductHandler) CreateProduct(c echo.Context) error {
 // GetProductByID обрабатывает запрос на получение продукта по ID
 func (h *ProductHandler) GetProductByID(c echo.Context) error {
 	id := c.Param("id")
-
-	product, err := h.productUseCase.GetProductByID(id)
+	uint64ID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	product, err := h.productUseCase.GetProductByID(uint64ID)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
 	}
@@ -62,8 +66,11 @@ func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 // DeleteProduct обрабатывает запрос на удаление продукта
 func (h *ProductHandler) DeleteProduct(c echo.Context) error {
 	id := c.Param("id")
-
-	if err := h.productUseCase.DeleteProduct(id); err != nil {
+	uint64ID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	if err := h.productUseCase.DeleteProduct(uint64ID); err != nil {
 		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
 	}
 
@@ -73,8 +80,11 @@ func (h *ProductHandler) DeleteProduct(c echo.Context) error {
 // GetProductsByStore обрабатывает запрос на получение всех продуктов по ID магазина
 func (h *ProductHandler) GetProductsByStore(c echo.Context) error {
 	storeID := c.Param("store_id")
-
-	products, err := h.productUseCase.GetProductsByStore(storeID)
+	uint64ID, err := strconv.ParseUint(storeID, 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	products, err := h.productUseCase.GetProductsByStore(uint64ID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}

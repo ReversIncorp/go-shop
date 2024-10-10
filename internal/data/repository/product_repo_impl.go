@@ -9,13 +9,13 @@ import (
 )
 
 type inMemoryProductRepository struct {
-	products map[string]entities.Product
+	products map[uint64]entities.Product
 	mu       sync.Mutex
 }
 
 func NewProductRepository() repository2.ProductRepository {
 	return &inMemoryProductRepository{
-		products: make(map[string]entities.Product),
+		products: make(map[uint64]entities.Product),
 	}
 }
 
@@ -36,7 +36,7 @@ func (r *inMemoryProductRepository) Save(product entities.Product) error {
 	return nil
 }
 
-func (r *inMemoryProductRepository) FindByID(id string) (entities.Product, error) {
+func (r *inMemoryProductRepository) FindByID(id uint64) (entities.Product, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -64,7 +64,7 @@ func (r *inMemoryProductRepository) Update(product entities.Product) error {
 	return nil
 }
 
-func (r *inMemoryProductRepository) Delete(id string) error {
+func (r *inMemoryProductRepository) Delete(id uint64) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -77,7 +77,7 @@ func (r *inMemoryProductRepository) Delete(id string) error {
 	return nil
 }
 
-func (r *inMemoryProductRepository) FindAllByStore(storeID string) ([]entities.Product, error) {
+func (r *inMemoryProductRepository) FindAllByStore(storeID uint64) ([]entities.Product, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

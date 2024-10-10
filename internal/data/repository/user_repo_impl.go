@@ -33,7 +33,7 @@ func (r *userRepositoryImpl) FindByEmail(email string) (entities.User, error) {
 	return user, nil
 }
 
-func (r *userRepositoryImpl) FindByID(id string) (entities.User, error) {
+func (r *userRepositoryImpl) FindByID(id uint64) (entities.User, error) {
 	for _, user := range r.users {
 		if user.ID == id {
 			return user, nil

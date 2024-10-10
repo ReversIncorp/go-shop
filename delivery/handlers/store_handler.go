@@ -5,15 +5,16 @@ import (
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/usecase"
 	"net/http"
+	"strconv"
 )
 
 // StoreHandler обрабатывает HTTP-запросы для магазинов
 type StoreHandler struct {
-	storeUseCase usecase.StoreUseCase
+	storeUseCase *usecase.StoreUseCase
 }
 
 // NewStoreHandler создает новый экземпляр StoreHandler
-func NewStoreHandler(storeUseCase usecase.StoreUseCase) *StoreHandler {
+func NewStoreHandler(storeUseCase *usecase.StoreUseCase) *StoreHandler {
 	return &StoreHandler{storeUseCase: storeUseCase}
 }
 
@@ -35,8 +36,11 @@ func (h *StoreHandler) CreateStore(c echo.Context) error {
 // GetStoreByID обрабатывает запрос на получение магазина по ID
 func (h *StoreHandler) GetStoreByID(c echo.Context) error {
 	id := c.Param("id")
-
-	store, err := h.storeUseCase.GetStoreByID(id)
+	uint64ID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	store, err := h.storeUseCase.GetStoreByID(uint64ID)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
 	}
@@ -62,8 +66,11 @@ func (h *StoreHandler) UpdateStore(c echo.Context) error {
 // DeleteStore обрабатывает запрос на удаление магазина
 func (h *StoreHandler) DeleteStore(c echo.Context) error {
 	id := c.Param("id")
-
-	if err := h.storeUseCase.DeleteStore(id); err != nil {
+	uint64ID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	if err := h.storeUseCase.DeleteStore(uint64ID); err != nil {
 		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
 	}
 

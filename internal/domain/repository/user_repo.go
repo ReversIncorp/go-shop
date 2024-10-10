@@ -7,5 +7,5 @@ import (
 type UserRepository interface {
 	Create(user entities.User) error
 	FindByEmail(email string) (entities.User, error)
-	FindByID(email string) (entities.User, error)
+	FindByID(email uint64) (entities.User, error)
 }

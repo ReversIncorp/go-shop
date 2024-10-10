@@ -18,7 +18,7 @@ func NewUserUseCase(userRepo repository.UserRepository) *UserUseCase {
 // Register Реализация метода Register
 func (u *UserUseCase) Register(user entities.User) error {
 	existingUser, err := u.userRepo.FindByEmail(user.Email)
-	if err == nil && existingUser.ID != "" {
+	if err == nil && existingUser.ID != 0 {
 		return errors.New("user already exists")
 	}
 	return u.userRepo.Create(user)
@@ -35,6 +35,6 @@ func (u *UserUseCase) Login(email, password string) (string, error) {
 }
 
 // GetUserByID Реализация метода GetUserByID
-func (u *UserUseCase) GetUserByID(id string) (entities.User, error) {
+func (u *UserUseCase) GetUserByID(id uint64) (entities.User, error) {
 	return u.userRepo.FindByID(id)
 }
