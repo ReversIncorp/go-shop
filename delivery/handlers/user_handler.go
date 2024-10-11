@@ -30,11 +30,18 @@ func (h *UserHandler) Register(c echo.Context) error {
 	if err := h.validator.Struct(user); err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
-	if err := h.userUseCase.Register(user); err != nil {
+
+	// Вызов метода Register и получение токенов
+	tokenDetails, err := h.userUseCase.Register(user)
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
 
-	return c.JSON(http.StatusCreated, user)
+	// Возвращаем информацию о пользователе и токенах
+	return c.JSON(http.StatusCreated, echo.Map{
+		"access_token":  tokenDetails.AccessToken,
+		"refresh_token": tokenDetails.RefreshToken,
+	})
 }
 
 // Login обрабатывает запрос на вход пользователя
@@ -46,12 +53,18 @@ func (h *UserHandler) Login(c echo.Context) error {
 	if err := h.validator.Struct(credentials); err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
-	token, err := h.userUseCase.Login(credentials.Email, credentials.Password)
+
+	// Вызов метода Login и получение токенов
+	tokenDetails, err := h.userUseCase.Login(credentials.Email, credentials.Password)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": err.Error()})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{"token": token})
+	// Возвращаем токены
+	return c.JSON(http.StatusOK, echo.Map{
+		"access_token":  tokenDetails.AccessToken,
+		"refresh_token": tokenDetails.RefreshToken,
+	})
 }
 
 // GetUserByID обрабатывает запрос на получение информации о пользователе по ID

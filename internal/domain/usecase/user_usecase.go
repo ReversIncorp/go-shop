@@ -4,6 +4,7 @@ import (
 	"errors"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
+	"marketplace/pkg/utils"
 )
 
 type UserUseCase struct {
@@ -16,22 +17,40 @@ func NewUserUseCase(userRepo repository.UserRepository) *UserUseCase {
 }
 
 // Register Реализация метода Register
-func (u *UserUseCase) Register(user entities.User) error {
+func (u *UserUseCase) Register(user entities.User) (*entities.Tokens, error) {
 	existingUser, err := u.userRepo.FindByEmail(user.Email)
 	if err == nil && existingUser.ID != 0 {
-		return errors.New("user already exists")
+		return nil, errors.New("user already exists")
 	}
-	return u.userRepo.Create(user)
+
+	// Сохраняем пользователя в репозиторий
+	if err := u.userRepo.Create(user); err != nil {
+		return nil, err
+	}
+
+	// Генерация токенов
+	tokenDetails, err := utils.GenerateTokens(user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return tokenDetails.ToTokens(), nil
 }
 
 // Login Реализация метода Login
-func (u *UserUseCase) Login(email, password string) (string, error) {
+func (u *UserUseCase) Login(email, password string) (*entities.Tokens, error) {
 	user, err := u.userRepo.FindByEmail(email)
 	if err != nil || user.Password != password { // Здесь должна быть логика хэширования пароля
-		return "", errors.New("invalid credentials")
+		return nil, errors.New("invalid credentials")
 	}
-	// Генерация токена (здесь может быть использован JWT)
-	return "token_placeholder", nil
+
+	// Генерация токенов
+	tokenDetails, err := utils.GenerateTokens(user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return tokenDetails.ToTokens(), nil
 }
 
 // GetUserByID Реализация метода GetUserByID
