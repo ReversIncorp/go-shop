@@ -41,6 +41,9 @@ func RegisterDependencies(container *dig.Container) error {
 	if err := container.Provide(repository.NewStoreRepository); err != nil {
 		return err
 	}
+	if err := container.Provide(repository.NewCategoryRepository); err != nil {
+		return err
+	}
 
 	// Регистрация use cases
 	if err := container.Provide(usecase.NewUserUseCase); err != nil {
@@ -52,6 +55,9 @@ func RegisterDependencies(container *dig.Container) error {
 	if err := container.Provide(usecase.NewStoreUseCase); err != nil {
 		return err
 	}
+	if err := container.Provide(usecase.NewCategoryUseCase); err != nil {
+		return err
+	}
 
 	// Регистрация обработчиков
 	if err := container.Provide(handlers.NewUserHandler); err != nil {
@@ -61,6 +67,9 @@ func RegisterDependencies(container *dig.Container) error {
 		return err
 	}
 	if err := container.Provide(handlers.NewStoreHandler); err != nil {
+		return err
+	}
+	if err := container.Provide(handlers.NewCategoryHandler); err != nil {
 		return err
 	}
 
@@ -90,12 +99,14 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	var userHandler *handlers.UserHandler
 	var productHandler *handlers.ProductHandler
 	var storeHandler *handlers.StoreHandler
+	var categoryHandler *handlers.CategoryHandler
 
 	// Получаем хэндлеры через контейнер
-	if err := container.Invoke(func(uh *handlers.UserHandler, ph *handlers.ProductHandler, sh *handlers.StoreHandler) {
+	if err := container.Invoke(func(uh *handlers.UserHandler, ph *handlers.ProductHandler, sh *handlers.StoreHandler, ch *handlers.CategoryHandler) {
 		userHandler = uh
 		productHandler = ph
 		storeHandler = sh
+		categoryHandler = ch
 	}); err != nil {
 		fmt.Printf("Failed to invoke handlers: %v\n", err)
 		return err
@@ -121,5 +132,12 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	authorizedScope.PUT("/stores/:id", storeHandler.UpdateStore)
 	authorizedScope.DELETE("/stores/:id", storeHandler.DeleteStore)
 	authorizedScope.GET("/stores", storeHandler.GetAllStores)
+
+	// Регистрация маршрутов для категорий
+	authorizedScope.POST("/categories", categoryHandler.CreateCategory)
+	authorizedScope.GET("/categories/:id", categoryHandler.GetCategoryByID)
+	authorizedScope.PUT("/categories/:id", categoryHandler.UpdateCategory)
+	authorizedScope.DELETE("/categories/:id", categoryHandler.DeleteCategory)
+	authorizedScope.GET("/categories", categoryHandler.GetAllCategories)
 	return nil
 }
