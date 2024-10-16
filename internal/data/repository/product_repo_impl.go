@@ -2,90 +2,100 @@ package repository
 
 import (
 	"errors"
+	"gorm.io/gorm"
 	"marketplace/internal/domain/entities"
 	repository2 "marketplace/internal/domain/repository"
 	"sync"
 	"time"
 )
 
-type inMemoryProductRepository struct {
-	products map[uint64]entities.Product
-	mu       sync.Mutex
+type productRepositoryImpl struct {
+	db *gorm.DB
+	mu sync.Mutex
 }
 
-func NewProductRepository() repository2.ProductRepository {
-	return &inMemoryProductRepository{
-		products: make(map[uint64]entities.Product),
+func NewProductRepository(db *gorm.DB) repository2.ProductRepository {
+	return &productRepositoryImpl{
+		db: db,
 	}
 }
 
-func (r *inMemoryProductRepository) Save(product entities.Product) error {
+func (r *productRepositoryImpl) Save(product entities.Product) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	// Если продукт уже существует, вернем ошибку
-	if _, exists := r.products[product.ID]; exists {
+	var existingProduct entities.Product
+	if err := r.db.Where("id = ?", product.ID).First(&existingProduct).Error; err == nil {
 		return errors.New("product already exists")
 	}
 
-	// Устанавливаем время создания и обновления
 	product.CreatedAt = time.Now()
 	product.UpdatedAt = product.CreatedAt
 
-	r.products[product.ID] = product
+	if err := r.db.Create(&product).Error; err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (r *inMemoryProductRepository) FindByID(id uint64) (entities.Product, error) {
+func (r *productRepositoryImpl) FindByID(id uint64) (entities.Product, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	product, exists := r.products[id]
-	if !exists {
-		return entities.Product{}, errors.New("product not found")
+	var product entities.Product
+	if err := r.db.First(&product, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.Product{}, errors.New("product not found")
+		}
+		return entities.Product{}, err
 	}
 
 	return product, nil
 }
 
-func (r *inMemoryProductRepository) Update(product entities.Product) error {
+func (r *productRepositoryImpl) Update(product entities.Product) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	_, exists := r.products[product.ID]
-	if !exists {
-		return errors.New("product not found")
+	var existingProduct entities.Product
+	if err := r.db.First(&existingProduct, product.ID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("product not found")
+		}
+		return err
 	}
 
-	// Обновляем время изменения
 	product.UpdatedAt = time.Now()
 
-	r.products[product.ID] = product
+	if err := r.db.Save(&product).Error; err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (r *inMemoryProductRepository) Delete(id uint64) error {
+func (r *productRepositoryImpl) Delete(id uint64) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	_, exists := r.products[id]
-	if !exists {
-		return errors.New("product not found")
+	if err := r.db.Delete(&entities.Product{}, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("product not found")
+		}
+		return err
 	}
 
-	delete(r.products, id)
 	return nil
 }
 
-func (r *inMemoryProductRepository) FindAllByStore(storeID uint64) ([]entities.Product, error) {
+func (r *productRepositoryImpl) FindAllByStore(storeID uint64) ([]entities.Product, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	var products []entities.Product
-	for _, product := range r.products {
-		if product.StoreID == storeID {
-			products = append(products, product)
-		}
+	if err := r.db.Where("store_id = ?", storeID).Find(&products).Error; err != nil {
+		return nil, err
 	}
 
 	return products, nil

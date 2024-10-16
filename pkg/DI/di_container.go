@@ -8,6 +8,7 @@ import (
 	"marketplace/delivery/middleware"
 	"marketplace/internal/data/repository"
 	"marketplace/internal/domain/usecase"
+	"marketplace/pkg/database"
 	"marketplace/pkg/utils"
 	"os"
 )
@@ -16,6 +17,10 @@ var container = dig.New()
 
 func Container() *dig.Container {
 	return container
+}
+
+func RegisterDatabase(container *dig.Container) error {
+	return container.Provide(database.InitPostgres)
 }
 
 func RegisterDependencies(container *dig.Container) error {

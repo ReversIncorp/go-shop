@@ -2,88 +2,100 @@ package repository
 
 import (
 	"errors"
+	"gorm.io/gorm"
 	"marketplace/internal/domain/entities"
-	repository2 "marketplace/internal/domain/repository"
+	"marketplace/internal/domain/repository"
 	"sync"
 	"time"
 )
 
-type inMemoryStoreRepository struct {
-	stores map[uint64]entities.Store
-	mu     sync.Mutex
+type storeRepositoryImpl struct {
+	db *gorm.DB
+	mu sync.Mutex
 }
 
-func NewStoreRepository() repository2.StoreRepository {
-	return &inMemoryStoreRepository{
-		stores: make(map[uint64]entities.Store),
+func NewStoreRepository(db *gorm.DB) repository.StoreRepository {
+	return &storeRepositoryImpl{
+		db: db,
 	}
 }
 
-func (r *inMemoryStoreRepository) Save(store entities.Store) error {
+func (r *storeRepositoryImpl) Save(store entities.Store) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	// Если магазин уже существует, вернем ошибку
-	if _, exists := r.stores[store.ID]; exists {
-		return errors.New("store already exists")
+	var existingStore entities.Store
+	if err := r.db.Where("id = ?", store.ID).First(&existingStore).Error; err == nil {
+		return errors.New("store already exists in the database")
 	}
 
-	// Устанавливаем время создания и обновления
 	store.CreatedAt = time.Now()
 	store.UpdatedAt = store.CreatedAt
 
-	r.stores[store.ID] = store
+	if err := r.db.Create(&store).Error; err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (r *inMemoryStoreRepository) FindByID(id uint64) (entities.Store, error) {
+func (r *storeRepositoryImpl) FindByID(id uint64) (entities.Store, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	store, exists := r.stores[id]
-	if !exists {
-		return entities.Store{}, errors.New("store not found")
+	var store entities.Store
+	if err := r.db.First(&store, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.Store{}, errors.New("store not found")
+		}
+		return entities.Store{}, err
 	}
 
 	return store, nil
 }
 
-func (r *inMemoryStoreRepository) Update(store entities.Store) error {
+func (r *storeRepositoryImpl) Update(store entities.Store) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	_, exists := r.stores[store.ID]
-	if !exists {
-		return errors.New("store not found")
+	var existingStore entities.Store
+	if err := r.db.First(&existingStore, store.ID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("store not found")
+		}
+		return err
 	}
 
-	// Обновляем время изменения
 	store.UpdatedAt = time.Now()
 
-	r.stores[store.ID] = store
+	if err := r.db.Save(&store).Error; err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (r *inMemoryStoreRepository) Delete(id uint64) error {
+func (r *storeRepositoryImpl) Delete(id uint64) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	_, exists := r.stores[id]
-	if !exists {
-		return errors.New("store not found")
+	if err := r.db.Delete(&entities.Store{}, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("store not found")
+		}
+		return err
 	}
 
-	delete(r.stores, id)
 	return nil
 }
 
-func (r *inMemoryStoreRepository) FindAll() ([]entities.Store, error) {
+func (r *storeRepositoryImpl) FindAll() ([]entities.Store, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	var stores []entities.Store
-	for _, store := range r.stores {
-		stores = append(stores, store)
+	if err := r.db.Find(&stores).Error; err != nil {
+		return nil, err
 	}
 
 	return stores, nil

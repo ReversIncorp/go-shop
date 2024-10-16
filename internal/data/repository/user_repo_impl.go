@@ -2,42 +2,50 @@ package repository
 
 import (
 	"errors"
+	"gorm.io/gorm"
 	"marketplace/internal/domain/entities"
 	repository2 "marketplace/internal/domain/repository"
 )
 
 type userRepositoryImpl struct {
 	// Можно использовать базу данных здесь, например, Gorm или другое хранилище
-	users map[string]entities.User
+	//users map[string]entities.User
+	db *gorm.DB
 }
 
-func NewUserRepository() repository2.UserRepository {
+func NewUserRepository(db *gorm.DB) repository2.UserRepository {
 	return &userRepositoryImpl{
-		users: make(map[string]entities.User),
+		db: db,
 	}
 }
 
 func (r *userRepositoryImpl) Create(user entities.User) error {
-	if _, exists := r.users[user.Email]; exists {
+	var existingUser entities.User
+	if err := r.db.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
 		return errors.New("user already exists")
 	}
-	r.users[user.Email] = user
-	return nil
+
+	return r.db.Create(&user).Error
 }
 
 func (r *userRepositoryImpl) FindByEmail(email string) (entities.User, error) {
-	user, exists := r.users[email]
-	if !exists {
-		return entities.User{}, errors.New("user not found")
+	var user entities.User
+	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.User{}, errors.New("user not found")
+		}
+		return entities.User{}, err
 	}
 	return user, nil
 }
 
 func (r *userRepositoryImpl) FindByID(id uint64) (entities.User, error) {
-	for _, user := range r.users {
-		if user.ID == id {
-			return user, nil
+	var user entities.User
+	if err := r.db.First(&user, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entities.User{}, errors.New("user not found")
 		}
+		return entities.User{}, err
 	}
-	return entities.User{}, errors.New("user not found")
+	return user, nil
 }
