@@ -1,19 +1,17 @@
 package repository
 
 import (
+	"database/sql"
 	"errors"
-	"gorm.io/gorm"
 	"marketplace/internal/domain/entities"
 	repository2 "marketplace/internal/domain/repository"
 )
 
 type userRepositoryImpl struct {
-	// Можно использовать базу данных здесь, например, Gorm или другое хранилище
-	//users map[string]entities.User
-	db *gorm.DB
+	db *sql.DB
 }
 
-func NewUserRepository(db *gorm.DB) repository2.UserRepository {
+func NewUserRepository(db *sql.DB) repository2.UserRepository {
 	return &userRepositoryImpl{
 		db: db,
 	}
@@ -21,17 +19,30 @@ func NewUserRepository(db *gorm.DB) repository2.UserRepository {
 
 func (r *userRepositoryImpl) Create(user entities.User) error {
 	var existingUser entities.User
-	if err := r.db.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
+	query := `SELECT id, email FROM users WHERE email = $1`
+	err := r.db.QueryRow(query, user.Email).Scan(&existingUser.ID, &existingUser.Email)
+	if err == nil {
 		return errors.New("user already exists")
 	}
 
-	return r.db.Create(&user).Error
+	insertQuery := `INSERT INTO users (name, email, password, is_owner) 
+	                VALUES ($1, $2, $3, $4) RETURNING id`
+	err = r.db.QueryRow(insertQuery, user.Name, user.Email, user.Password, user.IsOwner).Scan(&user.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *userRepositoryImpl) FindByEmail(email string) (entities.User, error) {
 	var user entities.User
-	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	query := `SELECT id, name, email, password, is_owner
+	          FROM users WHERE email = $1`
+	err := r.db.QueryRow(query, email).Scan(
+		&user.ID, &user.Name, &user.Email, &user.Password, &user.IsOwner)
+	if err != nil {
+		if err == sql.ErrNoRows {
 			return entities.User{}, errors.New("user not found")
 		}
 		return entities.User{}, err
@@ -41,8 +52,12 @@ func (r *userRepositoryImpl) FindByEmail(email string) (entities.User, error) {
 
 func (r *userRepositoryImpl) FindByID(id uint64) (entities.User, error) {
 	var user entities.User
-	if err := r.db.First(&user, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	query := `SELECT id, name, email, password, is_owner 
+	          FROM users WHERE id = $1`
+	err := r.db.QueryRow(query, id).Scan(
+		&user.ID, &user.Name, &user.Email, &user.Password, &user.IsOwner)
+	if err != nil {
+		if err == sql.ErrNoRows {
 			return entities.User{}, errors.New("user not found")
 		}
 		return entities.User{}, err

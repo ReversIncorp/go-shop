@@ -20,7 +20,7 @@ func Container() *dig.Container {
 }
 
 func RegisterDatabase(container *dig.Container) error {
-	return container.Provide(database.InitPostgres)
+	return container.Provide(database.OpenDB)
 }
 
 func RegisterDependencies(container *dig.Container) error {

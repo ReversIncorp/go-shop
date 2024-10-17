@@ -3,15 +3,13 @@ package entities
 import "time"
 
 type Product struct {
-	ID          uint64    `gorm:"primaryKey"`
-	Name        string    `gorm:"size:100;not null" json:"name" validate:"required"`
-	Description string    `gorm:"type:text" json:"description" validate:"required"`
-	Price       float64   `gorm:"not null" json:"price" validate:"required"`
-	Quantity    int       `gorm:"not null" json:"quantity" validate:"required"`
-	CategoryID  uint64    `gorm:"not null" json:"category_id" validate:"required"` // Внешний ключ для категории
-	Category    Category  `gorm:"foreignKey:CategoryID" json:"category"`           // Связь с категорией
-	StoreID     uint64    `gorm:"not null" json:"store_id" validate:"required"`    // Внешний ключ для магазина
-	Store       Store     `gorm:"foreignKey:StoreID" json:"store"`                 // Связь с магазином
-	CreatedAt   time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt   time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	ID          uint64    `json:"id"`
+	Name        string    `json:"name" validate:"required"`
+	Description string    `json:"description" validate:"required"`
+	Price       float64   `json:"price" validate:"required"`
+	Quantity    int       `json:"quantity" validate:"required"`
+	CategoryID  uint64    `json:"category_id" validate:"required"`
+	StoreID     uint64    `json:"store_id" validate:"required"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }

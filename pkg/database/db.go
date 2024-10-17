@@ -1,26 +1,24 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"marketplace/internal/domain/entities"
 	"os"
+
+	_ "github.com/lib/pq"
 )
 
-func InitPostgres() (*gorm.DB, error) {
-	databaseConn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
-		os.Getenv("DB_HOST"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_NAME"), os.Getenv("DB_PORT"))
-
-	db, err := gorm.Open(postgres.Open(databaseConn), &gorm.Config{})
+func OpenDB() (*sql.DB, error) {
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_NAME"))
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	err = db.AutoMigrate(&entities.User{}, &entities.Store{}, &entities.Product{}, &entities.Category{})
-	if err != nil {
-		return nil, err
+	if err := db.Ping(); err != nil {
+		return nil, fmt.Errorf("ping to database failed: %w", err)
 	}
 
 	return db, nil

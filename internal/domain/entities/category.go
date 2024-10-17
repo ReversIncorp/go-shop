@@ -3,10 +3,10 @@ package entities
 import "time"
 
 type Category struct {
-	ID          uint64    `gorm:"primaryKey"`
-	Name        string    `gorm:"size:100;not null" json:"name" validate:"required"`
-	Description string    `gorm:"size:255" json:"description" validate:"required"`
-	CreatedAt   time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt   time.Time `gorm:"autoUpdateTime" json:"updated_at"`
-	Products    []Product `gorm:"foreignKey:CategoryID" json:"products"` // Связь с продуктами
+	ID          uint64    `json:"id"`
+	Name        string    `json:"name" validate:"required"`
+	Description string    `json:"description" validate:"required"`
+	StoreID     uint64    `json:"store_id" validate:"required"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }

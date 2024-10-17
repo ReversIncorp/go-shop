@@ -1,8 +1,8 @@
 package repository
 
 import (
+	"database/sql"
 	"errors"
-	"gorm.io/gorm"
 	"marketplace/internal/domain/entities"
 	repository2 "marketplace/internal/domain/repository"
 	"sync"
@@ -10,11 +10,11 @@ import (
 )
 
 type productRepositoryImpl struct {
-	db *gorm.DB
+	db *sql.DB
 	mu sync.Mutex
 }
 
-func NewProductRepository(db *gorm.DB) repository2.ProductRepository {
+func NewProductRepository(db *sql.DB) repository2.ProductRepository {
 	return &productRepositoryImpl{
 		db: db,
 	}
@@ -24,15 +24,22 @@ func (r *productRepositoryImpl) Save(product entities.Product) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	var existingProduct entities.Product
-	if err := r.db.Where("id = ?", product.ID).First(&existingProduct).Error; err == nil {
+	var existingProductID uint64
+	err := r.db.QueryRow("SELECT id FROM products WHERE id = $1", product.ID).Scan(&existingProductID)
+	if err == nil {
 		return errors.New("product already exists")
+	}
+	if err != nil && err != sql.ErrNoRows {
+		return err
 	}
 
 	product.CreatedAt = time.Now()
 	product.UpdatedAt = product.CreatedAt
 
-	if err := r.db.Create(&product).Error; err != nil {
+	_, err = r.db.Exec(`INSERT INTO products (name, description, price, quantity, category_id, store_id, created_at, updated_at) 
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		product.Name, product.Description, product.Price, product.Quantity, product.CategoryID, product.StoreID, product.CreatedAt, product.UpdatedAt)
+	if err != nil {
 		return err
 	}
 
@@ -44,8 +51,11 @@ func (r *productRepositoryImpl) FindByID(id uint64) (entities.Product, error) {
 	defer r.mu.Unlock()
 
 	var product entities.Product
-	if err := r.db.First(&product, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	err := r.db.QueryRow(`SELECT id, name, description, price, quantity, category_id, store_id, created_at, updated_at 
+	                      FROM products WHERE id = $1`, id).
+		Scan(&product.ID, &product.Name, &product.Description, &product.Price, &product.Quantity, &product.CategoryID, &product.StoreID, &product.CreatedAt, &product.UpdatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
 			return entities.Product{}, errors.New("product not found")
 		}
 		return entities.Product{}, err
@@ -58,9 +68,10 @@ func (r *productRepositoryImpl) Update(product entities.Product) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	var existingProduct entities.Product
-	if err := r.db.First(&existingProduct, product.ID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	var existingProductID uint64
+	err := r.db.QueryRow("SELECT id FROM products WHERE id = $1", product.ID).Scan(&existingProductID)
+	if err != nil {
+		if err == sql.ErrNoRows {
 			return errors.New("product not found")
 		}
 		return err
@@ -68,7 +79,11 @@ func (r *productRepositoryImpl) Update(product entities.Product) error {
 
 	product.UpdatedAt = time.Now()
 
-	if err := r.db.Save(&product).Error; err != nil {
+	_, err = r.db.Exec(`UPDATE products 
+                        SET name = $1, description = $2, price = $3, quantity = $4, category_id = $5, store_id = $6, updated_at = $7 
+                        WHERE id = $8`,
+		product.Name, product.Description, product.Price, product.Quantity, product.CategoryID, product.StoreID, product.UpdatedAt, product.ID)
+	if err != nil {
 		return err
 	}
 
@@ -79,10 +94,17 @@ func (r *productRepositoryImpl) Delete(id uint64) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if err := r.db.Delete(&entities.Product{}, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	var existingProductID uint64
+	err := r.db.QueryRow("SELECT id FROM products WHERE id = $1", id).Scan(&existingProductID)
+	if err != nil {
+		if err == sql.ErrNoRows {
 			return errors.New("product not found")
 		}
+		return err
+	}
+
+	_, err = r.db.Exec("DELETE FROM products WHERE id = $1", id)
+	if err != nil {
 		return err
 	}
 
@@ -93,8 +115,23 @@ func (r *productRepositoryImpl) FindAllByStore(storeID uint64) ([]entities.Produ
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	rows, err := r.db.Query(`SELECT id, name, description, price, quantity, category_id, store_id, created_at, updated_at 
+	                         FROM products WHERE store_id = $1`, storeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
 	var products []entities.Product
-	if err := r.db.Where("store_id = ?", storeID).Find(&products).Error; err != nil {
+	for rows.Next() {
+		var product entities.Product
+		if err := rows.Scan(&product.ID, &product.Name, &product.Description, &product.Price, &product.Quantity, &product.CategoryID, &product.StoreID, &product.CreatedAt, &product.UpdatedAt); err != nil {
+			return nil, err
+		}
+		products = append(products, product)
+	}
+
+	if err = rows.Err(); err != nil {
 		return nil, err
 	}
 
