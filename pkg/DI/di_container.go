@@ -138,6 +138,6 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	authorizedScope.GET("/categories/:id", categoryHandler.GetCategoryByID)
 	authorizedScope.PUT("/categories/:id", categoryHandler.UpdateCategory)
 	authorizedScope.DELETE("/categories/:id", categoryHandler.DeleteCategory)
-	authorizedScope.GET("/categories", categoryHandler.GetAllCategories)
+	authorizedScope.GET("/categories/store/:id", categoryHandler.GetAllCategories)
 	return nil
 }

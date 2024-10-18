@@ -13,22 +13,22 @@ func NewCategoryUseCase(categoryRepo repository.CategoryRepository) *CategoryUse
 	return &CategoryUseCase{categoryRepo: categoryRepo}
 }
 
-func (c *CategoryUseCase) CreateCategory(category entities.Category) error {
-	return c.categoryRepo.Save(category)
+func (c *CategoryUseCase) CreateCategory(category entities.Category, uid int64) error {
+	return c.categoryRepo.Save(category, uid)
 }
 
-func (c *CategoryUseCase) GetCategoryByID(id uint64) (entities.Category, error) {
+func (c *CategoryUseCase) GetCategoryByID(id int64) (entities.Category, error) {
 	return c.categoryRepo.FindByID(id)
 }
 
-func (c *CategoryUseCase) UpdateCategory(category entities.Category) error {
-	return c.categoryRepo.Update(category)
+func (c *CategoryUseCase) UpdateCategory(category entities.Category, uid int64) error {
+	return c.categoryRepo.Update(category, uid)
 }
 
-func (c *CategoryUseCase) DeleteCategory(id uint64) error {
-	return c.categoryRepo.Delete(id)
+func (c *CategoryUseCase) DeleteCategory(id int64, uid int64) error {
+	return c.categoryRepo.Delete(id, uid)
 }
 
-func (c *CategoryUseCase) GetAllCategories() ([]entities.Category, error) {
-	return c.categoryRepo.FindAll()
+func (c *CategoryUseCase) GetAllCategoriesByStore(id int64) ([]entities.Category, error) {
+	return c.categoryRepo.FindAllByStore(id)
 }
