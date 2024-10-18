@@ -125,6 +125,7 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	authorizedScope.PUT("/products/:id", productHandler.UpdateProduct)
 	authorizedScope.DELETE("/products/:id", productHandler.DeleteProduct)
 	authorizedScope.GET("/stores/:store_id/products", productHandler.GetProductsByStore)
+	authorizedScope.GET("/stores/:store_id/categories/:category_id/products", productHandler.GetProductsByStoreAndCategory)
 
 	// Регистрация маршрутов для магазинов
 	authorizedScope.POST("/stores", storeHandler.CreateStore)
