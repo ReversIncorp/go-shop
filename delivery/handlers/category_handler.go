@@ -105,9 +105,9 @@ func (h *CategoryHandler) DeleteCategory(c echo.Context) error {
 	return c.JSON(http.StatusBadRequest, echo.Map{"error": "Missing user_id from token"})
 }
 
-// GetAllCategories обрабатывает запрос на получение всех категорий
-func (h *CategoryHandler) GetAllCategories(c echo.Context) error {
-	id := c.Param("id")
+// GetAllCategoriesByStore обрабатывает запрос на получение всех категорий
+func (h *CategoryHandler) GetAllCategoriesByStore(c echo.Context) error {
+	id := c.Param("store_id")
 	int64ID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
