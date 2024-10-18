@@ -27,7 +27,7 @@ func (t *TokenDetails) ToTokens() *entities.Tokens {
 }
 
 // GenerateTokens создает новые Access и Refresh токены
-func GenerateTokens(userID uint64) (*TokenDetails, error) {
+func GenerateTokens(userID int64) (*TokenDetails, error) {
 	tokenDetails := &TokenDetails{}
 
 	// Генерация Access токена

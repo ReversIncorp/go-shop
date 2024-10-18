@@ -16,23 +16,23 @@ func NewStoreUseCase(storeRepo repository.StoreRepository) *StoreUseCase {
 }
 
 // CreateStore создает новый магазин
-func (s *StoreUseCase) CreateStore(store entities.Store) error {
-	return s.storeRepo.Save(store)
+func (s *StoreUseCase) CreateStore(store entities.Store, userID int64) error {
+	return s.storeRepo.Save(store, userID)
 }
 
 // GetStoreByID получает магазин по ID
-func (s *StoreUseCase) GetStoreByID(id uint64) (entities.Store, error) {
+func (s *StoreUseCase) GetStoreByID(id int64) (entities.Store, error) {
 	return s.storeRepo.FindByID(id)
 }
 
 // UpdateStore обновляет существующий магазин
-func (s *StoreUseCase) UpdateStore(store entities.Store) error {
-	return s.storeRepo.Update(store)
+func (s *StoreUseCase) UpdateStore(store entities.Store, userID int64) error {
+	return s.storeRepo.Update(store, userID)
 }
 
 // DeleteStore удаляет магазин по ID
-func (s *StoreUseCase) DeleteStore(id uint64) error {
-	return s.storeRepo.Delete(id)
+func (s *StoreUseCase) DeleteStore(id int64, uid int64) error {
+	return s.storeRepo.Delete(id, uid)
 }
 
 // GetAllStores получает все магазины

@@ -5,9 +5,9 @@ import (
 )
 
 type StoreRepository interface {
-	Save(store entities.Store) error
-	FindByID(id uint64) (entities.Store, error)
-	Update(store entities.Store) error
-	Delete(id uint64) error
+	Save(store entities.Store, userID int64) error
+	FindByID(id int64) (entities.Store, error)
+	Update(store entities.Store, userID int64) error
+	Delete(id int64, uid int64) error
 	FindAll() ([]entities.Store, error)
 }

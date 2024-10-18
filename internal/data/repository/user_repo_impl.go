@@ -25,9 +25,9 @@ func (r *userRepositoryImpl) Create(user entities.User) error {
 		return errors.New("user already exists")
 	}
 
-	insertQuery := `INSERT INTO users (name, email, password, is_owner) 
+	insertQuery := `INSERT INTO users (name, email, password, is_seller) 
 	                VALUES ($1, $2, $3, $4) RETURNING id`
-	err = r.db.QueryRow(insertQuery, user.Name, user.Email, user.Password, user.IsOwner).Scan(&user.ID)
+	err = r.db.QueryRow(insertQuery, user.Name, user.Email, user.Password, user.IsSeller).Scan(&user.ID)
 	if err != nil {
 		return err
 	}
@@ -37,10 +37,10 @@ func (r *userRepositoryImpl) Create(user entities.User) error {
 
 func (r *userRepositoryImpl) FindByEmail(email string) (entities.User, error) {
 	var user entities.User
-	query := `SELECT id, name, email, password, is_owner
+	query := `SELECT id, name, email, password, is_seller
 	          FROM users WHERE email = $1`
 	err := r.db.QueryRow(query, email).Scan(
-		&user.ID, &user.Name, &user.Email, &user.Password, &user.IsOwner)
+		&user.ID, &user.Name, &user.Email, &user.Password, &user.IsSeller)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return entities.User{}, errors.New("user not found")
@@ -52,10 +52,10 @@ func (r *userRepositoryImpl) FindByEmail(email string) (entities.User, error) {
 
 func (r *userRepositoryImpl) FindByID(id uint64) (entities.User, error) {
 	var user entities.User
-	query := `SELECT id, name, email, password, is_owner 
+	query := `SELECT id, name, email, password, is_seller 
 	          FROM users WHERE id = $1`
 	err := r.db.QueryRow(query, id).Scan(
-		&user.ID, &user.Name, &user.Email, &user.Password, &user.IsOwner)
+		&user.ID, &user.Name, &user.Email, &user.Password, &user.IsSeller)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return entities.User{}, errors.New("user not found")

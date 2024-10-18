@@ -26,21 +26,28 @@ func (h *StoreHandler) CreateStore(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
 	}
 
-	if err := h.storeUseCase.CreateStore(store); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+	userID := c.Get("user_id")
+	if userID != nil {
+		if uid, ok := userID.(float64); ok {
+			if err := h.storeUseCase.CreateStore(store, int64(uid)); err != nil {
+				return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+			}
+
+			return c.JSON(http.StatusCreated, store)
+		}
 	}
 
-	return c.JSON(http.StatusCreated, store)
+	return c.JSON(http.StatusBadRequest, echo.Map{"error": "Missing user_id from token"})
 }
 
 // GetStoreByID обрабатывает запрос на получение магазина по ID
 func (h *StoreHandler) GetStoreByID(c echo.Context) error {
 	id := c.Param("id")
-	uint64ID, err := strconv.ParseUint(id, 10, 64)
+	int64ID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
-	store, err := h.storeUseCase.GetStoreByID(uint64ID)
+	store, err := h.storeUseCase.GetStoreByID(int64ID)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
 	}
@@ -52,29 +59,52 @@ func (h *StoreHandler) GetStoreByID(c echo.Context) error {
 func (h *StoreHandler) UpdateStore(c echo.Context) error {
 	var store entities.Store
 
+	id := c.Param("id")
+	storeID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
+	}
+
 	if err := c.Bind(&store); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
 	}
 
-	if err := h.storeUseCase.UpdateStore(store); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+	store.ID = storeID
+
+	userID := c.Get("user_id")
+	if userID != nil {
+		if uid, ok := userID.(float64); ok {
+			if err := h.storeUseCase.UpdateStore(store, int64(uid)); err != nil {
+				return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+			}
+
+			return c.JSON(http.StatusOK, store)
+		}
 	}
 
-	return c.JSON(http.StatusOK, store)
+	return c.JSON(http.StatusBadRequest, echo.Map{"error": "Missing user_id from token"})
 }
 
 // DeleteStore обрабатывает запрос на удаление магазина
 func (h *StoreHandler) DeleteStore(c echo.Context) error {
 	id := c.Param("id")
-	uint64ID, err := strconv.ParseUint(id, 10, 64)
+	int64ID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err.Error())
-	}
-	if err := h.storeUseCase.DeleteStore(uint64ID); err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
 	}
 
-	return c.NoContent(http.StatusNoContent)
+	userID := c.Get("user_id")
+	if userID != nil {
+		if uid, ok := userID.(float64); ok {
+			if err := h.storeUseCase.DeleteStore(int64ID, int64(uid)); err != nil {
+				return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
+			}
+
+			return c.NoContent(http.StatusNoContent)
+		}
+	}
+
+	return c.JSON(http.StatusBadRequest, echo.Map{"error": "Missing user_id from token"})
 }
 
 // GetAllStores обрабатывает запрос на получение всех магазинов
