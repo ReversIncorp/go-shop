@@ -12,23 +12,9 @@ import (
 
 var jwtSecret = []byte(os.Getenv("JWT_SECRET_KEY"))
 
-// TokenDetails хранит данные о токенах
-type TokenDetails struct {
-	AccessToken  string
-	RefreshToken string
-	AccessUUID   string
-	RefreshUUID  string
-	AtExpires    int64
-	RtExpires    int64
-}
-
-func (t *TokenDetails) ToTokens() *entities.Tokens {
-	return &entities.Tokens{RefreshToken: t.RefreshToken, AccessToken: t.AccessToken}
-}
-
 // GenerateTokens создает новые Access и Refresh токены
-func GenerateTokens(userID uint64) (*TokenDetails, error) {
-	tokenDetails := &TokenDetails{}
+func GenerateTokens(userID uint64) (*entities.TokenDetails, error) {
+	tokenDetails := &entities.TokenDetails{}
 
 	// Генерация Access токена
 	tokenDetails.AtExpires = time.Now().Add(time.Hour * 72).Unix() // Срок действия Access токена - 72 часа
@@ -87,7 +73,9 @@ func ValidateToken(tokenString string) (*jwt.Token, error) {
 		if !ok {
 			return nil, fmt.Errorf("invalid token: user_id missing or invalid")
 		}
-		//TODO: Добавить добавления токена в БД типо redis для управления сессиями
+
+		//TODO: Добавить проверку токена на наличие в БД, типо redis для управления сессиями
+
 		// Проверяем наличие UUID токена
 		tokenUUID, ok := claims["access_uuid"].(string)
 		if !ok {

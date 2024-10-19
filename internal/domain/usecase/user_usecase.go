@@ -3,17 +3,20 @@ package usecase
 import (
 	"errors"
 	"marketplace/internal/domain/entities"
+	"marketplace/internal/domain/enums"
 	"marketplace/internal/domain/repository"
 	"marketplace/pkg/utils"
+	"time"
 )
 
 type UserUseCase struct {
-	userRepo repository.UserRepository
+	userRepo  repository.UserRepository
+	tokenRepo repository.JWTRepository
 }
 
 // NewUserUseCase Конструктор для создания новой UserUseCase
-func NewUserUseCase(userRepo repository.UserRepository) *UserUseCase {
-	return &UserUseCase{userRepo: userRepo}
+func NewUserUseCase(userRepo repository.UserRepository, tokenRepo repository.JWTRepository) *UserUseCase {
+	return &UserUseCase{userRepo: userRepo, tokenRepo: tokenRepo}
 }
 
 // Register Реализация метода Register
@@ -30,10 +33,27 @@ func (u *UserUseCase) Register(user entities.User) (*entities.Tokens, error) {
 
 	// Генерация токенов
 	tokenDetails, err := utils.GenerateTokens(user.ID)
+
 	if err != nil {
 		return nil, err
 	}
 
+	if err = u.tokenRepo.SaveToken(
+		user.ID,
+		tokenDetails.AccessToken,
+		enums.Access,
+		time.Hour*24,
+	); err != nil {
+		return nil, err
+	}
+	if err = u.tokenRepo.SaveToken(
+		user.ID,
+		tokenDetails.RefreshToken,
+		enums.Refresh,
+		time.Hour*24*365,
+	); err != nil {
+		return nil, err
+	}
 	return tokenDetails.ToTokens(), nil
 }
 

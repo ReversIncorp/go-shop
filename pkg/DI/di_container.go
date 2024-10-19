@@ -36,6 +36,9 @@ func RegisterDependencies(container *dig.Container) error {
 	if err := container.Provide(repository.NewStoreRepository); err != nil {
 		return err
 	}
+	if err := container.Provide(repository.NewRedisJWTRepository); err != nil {
+		return err
+	}
 
 	// Регистрация use cases
 	if err := container.Provide(usecase.NewUserUseCase); err != nil {
