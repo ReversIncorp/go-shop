@@ -6,7 +6,6 @@ import (
 	"marketplace/internal/domain/enums"
 	"marketplace/internal/domain/repository"
 	"marketplace/pkg/utils"
-	"time"
 )
 
 type UserUseCase struct {
@@ -30,31 +29,11 @@ func (u *UserUseCase) Register(user entities.User) (*entities.Tokens, error) {
 	if err := u.userRepo.Create(user); err != nil {
 		return nil, err
 	}
-
-	// Генерация токенов
-	tokenDetails, err := utils.GenerateTokens(user.ID)
-
+	tokens, err := u.generateTokens(user.ID)
 	if err != nil {
 		return nil, err
 	}
-
-	if err = u.tokenRepo.SaveToken(
-		user.ID,
-		tokenDetails.AccessToken,
-		enums.Access,
-		time.Hour*24,
-	); err != nil {
-		return nil, err
-	}
-	if err = u.tokenRepo.SaveToken(
-		user.ID,
-		tokenDetails.RefreshToken,
-		enums.Refresh,
-		time.Hour*24*365,
-	); err != nil {
-		return nil, err
-	}
-	return tokenDetails.ToTokens(), nil
+	return tokens, nil
 }
 
 // Login Реализация метода Login
@@ -64,16 +43,41 @@ func (u *UserUseCase) Login(email, password string) (*entities.Tokens, error) {
 		return nil, errors.New("invalid credentials")
 	}
 
-	// Генерация токенов
-	tokenDetails, err := utils.GenerateTokens(user.ID)
+	tokens, err := u.generateTokens(user.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	return tokenDetails.ToTokens(), nil
+	return tokens, nil
 }
 
 // GetUserByID Реализация метода GetUserByID
 func (u *UserUseCase) GetUserByID(id uint64) (entities.User, error) {
 	return u.userRepo.FindByID(id)
+}
+
+func (u *UserUseCase) generateTokens(userId uint64) (*entities.Tokens, error) {
+	{
+		accessToken, err := utils.GenerateToken(userId, enums.Access)
+		refreshToken, err := utils.GenerateToken(userId, enums.Refresh)
+		if err != nil {
+			return nil, err
+		}
+
+		if err = u.tokenRepo.SaveToken(
+			userId,
+			accessToken,
+			enums.Access,
+		); err != nil {
+			return nil, err
+		}
+		if err = u.tokenRepo.SaveToken(
+			userId,
+			refreshToken,
+			enums.Refresh,
+		); err != nil {
+			return nil, err
+		}
+		return &entities.Tokens{RefreshToken: refreshToken, AccessToken: accessToken}, nil
+	}
 }

@@ -2,37 +2,41 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/enums"
 	"marketplace/internal/domain/repository"
 	"strconv"
-	"time"
 )
 
-// RedisJWTRepository - реализация JWTRepository для Redis
-type RedisJWTRepository struct {
+// redisJWTRepository - реализация JWTRepository для Redis
+type redisJWTRepository struct {
 	redisClient *redis.Client
 	context     context.Context
 }
 
-// NewRedisJWTRepository - конструктор для создания нового экземпляра RedisJWTRepository
+// NewRedisJWTRepository - конструктор для создания нового экземпляра redisJWTRepository
 func NewRedisJWTRepository(redisClient *redis.Client) repository.JWTRepository {
-	return &RedisJWTRepository{
+	return &redisJWTRepository{
 		redisClient: redisClient,
 		context:     context.Background(),
 	}
 }
 
 // SaveToken saves TokenDetails in Redis with a specified expiration time
-func (r *RedisJWTRepository) SaveToken(
+func (r *redisJWTRepository) SaveToken(
 	userID uint64,
-	token string,
+	token *entities.TokenDetails,
 	tokenType enums.Token,
-	expiration time.Duration,
 ) error {
-	err := r.redisClient.SetEX(r.context, fmt.Sprintf("%s:%d", tokenType.String(), userID), token, expiration).Err()
+	jsonToken, err := json.Marshal(token)
+	if err != nil {
+		return fmt.Errorf("failed to marshal token: %v", err)
+	}
+	err = r.redisClient.SetEX(r.context, fmt.Sprintf("%s:%d", tokenType.String(), userID), jsonToken, tokenType.Duration()).Err()
 	if err != nil {
 		return fmt.Errorf("failed to save token into Redis: %v", err)
 	}
@@ -40,23 +44,26 @@ func (r *RedisJWTRepository) SaveToken(
 }
 
 // GetToken retrieves TokenDetails by userID
-func (r *RedisJWTRepository) GetToken(
+func (r *redisJWTRepository) GetToken(
 	userID uint64,
 	tokenType enums.Token,
-) (string, error) {
-	// Retrieve serialized JSON from Redis
-	token, err := r.redisClient.Get(r.context, fmt.Sprintf("%s:%d", tokenType.String(), userID)).Result()
+) (*entities.TokenDetails, error) {
+	var token *entities.TokenDetails
+	tokenJson, err := r.redisClient.Get(r.context, fmt.Sprintf("%s:%d", tokenType.String(), userID)).Result()
 	if errors.Is(err, redis.Nil) {
-		return "", fmt.Errorf("tokens not found")
+		return nil, fmt.Errorf("tokens not found")
 	} else if err != nil {
-		return "", fmt.Errorf("error retrieving tokens: %v", err)
+		return nil, fmt.Errorf("error retrieving tokens: %v", err)
 	}
 
+	if err = json.Unmarshal([]byte(tokenJson), &token); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal token: %v", err)
+	}
 	return token, nil
 }
 
 // DeleteToken removes tokens by userID
-func (r *RedisJWTRepository) DeleteToken(userID uint64) error {
+func (r *redisJWTRepository) DeleteToken(userID uint64) error {
 	err := r.redisClient.Del(r.context, strconv.FormatUint(userID, 10)).Err()
 	if err != nil {
 		return fmt.Errorf("failed to delete tokens: %v", err)

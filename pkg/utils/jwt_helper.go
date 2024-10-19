@@ -6,49 +6,33 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"marketplace/internal/domain/entities"
+	"marketplace/internal/domain/enums"
 	"os"
 	"time"
 )
 
 var jwtSecret = []byte(os.Getenv("JWT_SECRET_KEY"))
 
-// GenerateTokens создает новые Access и Refresh токены
-func GenerateTokens(userID uint64) (*entities.TokenDetails, error) {
+// GenerateToken создает новые Access и Refresh токены
+func GenerateToken(userID uint64, tokenType enums.Token) (*entities.TokenDetails, error) {
 	tokenDetails := &entities.TokenDetails{}
 
 	// Генерация Access токена
-	tokenDetails.AtExpires = time.Now().Add(time.Hour * 72).Unix() // Срок действия Access токена - 72 часа
-	tokenDetails.AccessUUID = uuid.New().String()                  // Генерация нового UUID для Access токена
+	tokenDetails.AtExpires = time.Now().Add(tokenType.Duration()).Unix() // Срок действия Access токена - 72 часа
+	tokenDetails.UUID = uuid.New().String()                              // Генерация нового UUID для Access токена
 
 	accessClaims := jwt.MapClaims{
 		"user_id":     userID,
 		"exp":         tokenDetails.AtExpires,
-		"access_uuid": tokenDetails.AccessUUID,
+		"access_uuid": tokenDetails.UUID,
 	}
 
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
-	tokenString, err := accessToken.SignedString(jwtSecret)
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
+	tokenString, err := claims.SignedString(jwtSecret)
 	if err != nil {
 		return nil, err
 	}
-	tokenDetails.AccessToken = tokenString
-
-	// Генерация Refresh токена
-	tokenDetails.RtExpires = time.Now().Add(time.Hour * 24 * 7).Unix() // Срок действия Refresh токена - 7 дней
-	tokenDetails.RefreshUUID = uuid.New().String()                     // Генерация нового UUID для Refresh токена
-
-	refreshClaims := jwt.MapClaims{
-		"user_id":      userID,
-		"exp":          tokenDetails.RtExpires,
-		"refresh_uuid": tokenDetails.RefreshUUID,
-	}
-
-	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	refreshTokenString, err := refreshToken.SignedString(jwtSecret)
-	if err != nil {
-		return nil, err
-	}
-	tokenDetails.RefreshToken = refreshTokenString
+	tokenDetails.Token = tokenString
 
 	return tokenDetails, nil
 }
