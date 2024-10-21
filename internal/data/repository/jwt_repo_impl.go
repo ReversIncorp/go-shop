@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	"github.com/labstack/echo/v4"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/enums"
 	"marketplace/internal/domain/repository"
-	"strconv"
 )
 
 // redisJWTRepository - реализация JWTRepository для Redis
@@ -31,13 +31,22 @@ func (r *redisJWTRepository) SaveToken(
 	userID uint64,
 	token *entities.TokenDetails,
 	tokenType enums.Token,
+	ctx echo.Context,
 ) error {
 	jsonToken, err := json.Marshal(token)
 	if err != nil {
 		return fmt.Errorf("failed to marshal token: %v", err)
 	}
-	err = r.redisClient.SetEX(r.context, fmt.Sprintf("%s:%d", tokenType.String(), userID), jsonToken, tokenType.Duration()).Err()
-	if err != nil {
+	if err = r.redisClient.SetEX(
+		r.context,
+		fmt.Sprintf(
+			"%s_%s:%d",
+			tokenType.String(),
+			ctx.Request().Header.Get("User-Agent"),
+			userID,
+		),
+		jsonToken, tokenType.Duration(),
+	).Err(); err != nil {
 		return fmt.Errorf("failed to save token into Redis: %v", err)
 	}
 	return nil
@@ -47,9 +56,18 @@ func (r *redisJWTRepository) SaveToken(
 func (r *redisJWTRepository) GetToken(
 	userID uint64,
 	tokenType enums.Token,
+	ctx echo.Context,
 ) (*entities.TokenDetails, error) {
 	var token *entities.TokenDetails
-	tokenJson, err := r.redisClient.Get(r.context, fmt.Sprintf("%s:%d", tokenType.String(), userID)).Result()
+	tokenJson, err := r.redisClient.Get(
+		r.context,
+		fmt.Sprintf(
+			"%s_%s:%d",
+			tokenType.String(),
+			ctx.Request().Header.Get("User-Agent()"),
+			userID,
+		),
+	).Result()
 	if errors.Is(err, redis.Nil) {
 		return nil, fmt.Errorf("tokens not found")
 	} else if err != nil {
@@ -63,8 +81,15 @@ func (r *redisJWTRepository) GetToken(
 }
 
 // DeleteToken removes tokens by userID
-func (r *redisJWTRepository) DeleteToken(userID uint64) error {
-	err := r.redisClient.Del(r.context, strconv.FormatUint(userID, 10)).Err()
+func (r *redisJWTRepository) DeleteToken(userID uint64, tokenType enums.Token, ctx echo.Context) error {
+	err := r.redisClient.Del(r.context,
+		fmt.Sprintf(
+			"%s_%s:%d",
+			tokenType.String(),
+			ctx.Request().Header.Get("User-Agent"),
+			userID,
+		),
+	).Err()
 	if err != nil {
 		return fmt.Errorf("failed to delete tokens: %v", err)
 	}

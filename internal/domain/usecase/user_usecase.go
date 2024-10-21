@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"errors"
+	"github.com/labstack/echo/v4"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/enums"
 	"marketplace/internal/domain/repository"
@@ -19,7 +20,7 @@ func NewUserUseCase(userRepo repository.UserRepository, tokenRepo repository.JWT
 }
 
 // Register Реализация метода Register
-func (u *UserUseCase) Register(user entities.User) (*entities.Tokens, error) {
+func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.Tokens, error) {
 	existingUser, err := u.userRepo.FindByEmail(user.Email)
 	if err == nil && existingUser.ID != 0 {
 		return nil, errors.New("user already exists")
@@ -29,7 +30,7 @@ func (u *UserUseCase) Register(user entities.User) (*entities.Tokens, error) {
 	if err := u.userRepo.Create(user); err != nil {
 		return nil, err
 	}
-	tokens, err := u.generateTokens(user.ID)
+	tokens, err := u.createTokens(user.ID, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -37,13 +38,13 @@ func (u *UserUseCase) Register(user entities.User) (*entities.Tokens, error) {
 }
 
 // Login Реализация метода Login
-func (u *UserUseCase) Login(email, password string) (*entities.Tokens, error) {
+func (u *UserUseCase) Login(email, password string, ctx echo.Context) (*entities.Tokens, error) {
 	user, err := u.userRepo.FindByEmail(email)
 	if err != nil || user.Password != password { // Здесь должна быть логика хэширования пароля
 		return nil, errors.New("invalid credentials")
 	}
 
-	tokens, err := u.generateTokens(user.ID)
+	tokens, err := u.createTokens(user.ID, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +57,12 @@ func (u *UserUseCase) GetUserByID(id uint64) (entities.User, error) {
 	return u.userRepo.FindByID(id)
 }
 
-func (u *UserUseCase) generateTokens(userId uint64) (*entities.Tokens, error) {
+// UpdateToken Реализация метода GetUserByID
+func (u *UserUseCase) UpdateToken(id uint64) (entities.User, error) {
+	return u.userRepo.FindByID(id)
+}
+
+func (u *UserUseCase) createTokens(userId uint64, ctx echo.Context) (*entities.Tokens, error) {
 	{
 		accessToken, err := utils.GenerateToken(userId, enums.Access)
 		refreshToken, err := utils.GenerateToken(userId, enums.Refresh)
@@ -68,6 +74,7 @@ func (u *UserUseCase) generateTokens(userId uint64) (*entities.Tokens, error) {
 			userId,
 			accessToken,
 			enums.Access,
+			ctx,
 		); err != nil {
 			return nil, err
 		}
@@ -75,6 +82,7 @@ func (u *UserUseCase) generateTokens(userId uint64) (*entities.Tokens, error) {
 			userId,
 			refreshToken,
 			enums.Refresh,
+			ctx,
 		); err != nil {
 			return nil, err
 		}
