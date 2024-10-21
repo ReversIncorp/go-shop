@@ -2,10 +2,11 @@ package DI
 
 import (
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 	"marketplace/delivery/handlers"
-	"marketplace/delivery/midleware"
+	"marketplace/delivery/middleware"
 	"marketplace/internal/data/repository"
 	"marketplace/internal/domain/usecase"
 	"marketplace/pkg/utils"
@@ -18,12 +19,34 @@ func Container() *dig.Container {
 	return container
 }
 
+func RegisterDatabases(container *dig.Container) error {
+	if err := container.Provide(registerRedisClient); err != nil {
+		return err
+	}
+	return nil
+}
+
+func registerRedisClient() (*redis.Client, error) {
+	redisClient := redis.NewClient(
+		&redis.Options{
+			Addr:     os.Getenv("REDIS_ADDR"),
+			Password: "",
+			DB:       0,
+		},
+	)
+	pong, err := redisClient.Ping(redisClient.Context()).Result()
+	if pong != "PONG" || err != nil {
+		return nil, fmt.Errorf("failed to connect to Redis: %v", err)
+	}
+	return redisClient, nil
+}
+
 func RegisterDependencies(container *dig.Container) error {
 	if err := container.Provide(utils.AppValidate); err != nil {
 		return err
 	}
 	// Регистрация логгера
-	if err := container.Provide(midleware.AppLoggersSingleton); err != nil {
+	if err := container.Provide(middleware.AppLoggersSingleton); err != nil {
 		return err
 	}
 	// Регистрация репозиториев
@@ -34,6 +57,9 @@ func RegisterDependencies(container *dig.Container) error {
 		return err
 	}
 	if err := container.Provide(repository.NewStoreRepository); err != nil {
+		return err
+	}
+	if err := container.Provide(repository.NewRedisJWTRepository); err != nil {
 		return err
 	}
 
@@ -64,8 +90,8 @@ func RegisterDependencies(container *dig.Container) error {
 
 func RegisterMiddleware(container *dig.Container, e *echo.Echo) error {
 	// Используем логгер из контейнера
-	var httpLogger *midleware.AppLoggers
-	if err := container.Invoke(func(logger *midleware.AppLoggers) {
+	var httpLogger *middleware.AppLoggers
+	if err := container.Invoke(func(logger *middleware.AppLoggers) {
 		httpLogger = logger
 	}); err != nil {
 		return fmt.Errorf("failed to invoke logger: %w", err)
@@ -96,22 +122,25 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 		return err
 	}
 
+	authorizedScope := e.Group("")
+	authorizedScope.Use(middleware.JWTMiddleware)
+
 	// Регистрация маршрутов для пользователей
 	e.POST("/users", userHandler.Register)
 	e.POST("/users/login", userHandler.Login)
 
 	// Регистрация маршрутов для продуктов
-	e.POST("/products", productHandler.CreateProduct)
-	e.GET("/products/:id", productHandler.GetProductByID)
-	e.PUT("/products/:id", productHandler.UpdateProduct)
-	e.DELETE("/products/:id", productHandler.DeleteProduct)
-	e.GET("/stores/:store_id/products", productHandler.GetProductsByStore)
+	authorizedScope.POST("/products", productHandler.CreateProduct)
+	authorizedScope.GET("/products/:id", productHandler.GetProductByID)
+	authorizedScope.PUT("/products/:id", productHandler.UpdateProduct)
+	authorizedScope.DELETE("/products/:id", productHandler.DeleteProduct)
+	authorizedScope.GET("/stores/:store_id/products", productHandler.GetProductsByStore)
 
 	// Регистрация маршрутов для магазинов
-	e.POST("/stores", storeHandler.CreateStore)
-	e.GET("/stores/:id", storeHandler.GetStoreByID)
-	e.PUT("/stores/:id", storeHandler.UpdateStore)
-	e.DELETE("/stores/:id", storeHandler.DeleteStore)
-	e.GET("/stores", storeHandler.GetAllStores)
+	authorizedScope.POST("/stores", storeHandler.CreateStore)
+	authorizedScope.GET("/stores/:id", storeHandler.GetStoreByID)
+	authorizedScope.PUT("/stores/:id", storeHandler.UpdateStore)
+	authorizedScope.DELETE("/stores/:id", storeHandler.DeleteStore)
+	authorizedScope.GET("/stores", storeHandler.GetAllStores)
 	return nil
 }

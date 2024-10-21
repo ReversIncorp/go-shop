@@ -1,4 +1,4 @@
-package midleware
+package middleware
 
 import (
 	"bytes"
@@ -79,12 +79,12 @@ func (l *AppLoggers) LoggingResponseMiddleware(next echo.HandlerFunc) echo.Handl
 		responseWrapper := wrappers.NewResponseWriterWrapper(originalWriter)
 		response.Writer = &responseWrapper
 
-		// Выполняем следующий обработчик
-		err := next(c)
 		// Логируем после обработки ответа
 		response.After(func() {
 			l.responseLogger.Infof(responseWrapper.String())
 		})
+		// Выполняем следующий обработчик
+		err := next(c)
 		if err != nil {
 			return err
 		}

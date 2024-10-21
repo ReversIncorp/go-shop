@@ -18,6 +18,10 @@ func main() {
 	container := DI.Container()
 	e := echo.New()
 
+	if err := DI.RegisterDatabases(container); err != nil {
+		fmt.Printf("Failed to register databases: %v\n", err)
+		return
+	}
 	// Регистрация всех зависимостей
 	if err := DI.RegisterDependencies(container); err != nil {
 		fmt.Printf("Failed to register dependencies: %v\n", err)
