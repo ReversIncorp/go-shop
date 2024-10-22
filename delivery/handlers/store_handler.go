@@ -1,20 +1,21 @@
 package handlers
 
 import (
-	"github.com/labstack/echo/v4"
 	"marketplace/internal/domain/entities"
-	"marketplace/internal/domain/usecase"
+	storeUsecases "marketplace/internal/domain/usecase/store_usecase"
 	"net/http"
 	"strconv"
+
+	"github.com/labstack/echo/v4"
 )
 
 // StoreHandler обрабатывает HTTP-запросы для магазинов
 type StoreHandler struct {
-	storeUseCase *usecase.StoreUseCase
+	storeUseCase *storeUsecases.StoreUseCase
 }
 
 // NewStoreHandler создает новый экземпляр StoreHandler
-func NewStoreHandler(storeUseCase *usecase.StoreUseCase) *StoreHandler {
+func NewStoreHandler(storeUseCase *storeUsecases.StoreUseCase) *StoreHandler {
 	return &StoreHandler{storeUseCase: storeUseCase}
 }
 

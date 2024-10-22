@@ -2,37 +2,37 @@ package main
 
 import (
 	"fmt"
+	"marketplace/pkg/di"
+
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
-	"marketplace/pkg/DI"
 )
 
 func main() {
 	// Load .env file
-	err := godotenv.Load("../.env")
+	var err error
+	err = godotenv.Load("../.env")
 	if err != nil {
-		fmt.Println(err)
-		fmt.Println("Error loading .env file")
-		return
+		err := fmt.Sprintf("Error loading .env file.\n%s", err)
+		panic(err)
 	}
-	container := DI.Container()
+	container := di.Container()
 	e := echo.New()
 
 	// Регистрация всех зависимостей
-	if err := DI.RegisterDependencies(container); err != nil {
-		fmt.Printf("Failed to register dependencies: %v\n", err)
-		return
+	err = di.RegisterDependencies(container)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to register dependencies: %v\n", err))
 	}
 
 	// Регистрация midleware
-	if err := DI.RegisterMiddleware(container, e); err != nil {
-		fmt.Printf("Failed to register midleware: %v\n", err)
-		return
+	if err = di.RegisterMiddleware(container, e); err != nil {
+		err := fmt.Sprintf("Failed to register midleware: %v\n", err)
+		panic(err)
 	}
 
-	if err := DI.RegisterRoutes(container, e); err != nil {
-		fmt.Printf("Failed to register routes: %v\n", err)
-		return
+	if err = di.RegisterRoutes(container, e); err != nil {
+		panic(fmt.Sprintf("Failed to register routes: %v\n", err))
 	}
 	// Запуск сервера
 	e.Logger.Fatal(e.Start(":8080"))

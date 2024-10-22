@@ -3,9 +3,10 @@ package wrappers
 import (
 	"bytes"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"marketplace/pkg/utils"
 	"net/http"
+
+	"github.com/sirupsen/logrus"
 )
 
 type ResponseWriterWrapper struct {
