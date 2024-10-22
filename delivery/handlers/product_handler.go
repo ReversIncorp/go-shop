@@ -100,39 +100,16 @@ func (h *ProductHandler) DeleteProduct(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-// GetProductsByStore обрабатывает запрос на получение всех продуктов по ID магазина
-func (h *ProductHandler) GetProductsByStore(c echo.Context) error {
-	storeID := c.Param("store_id")
-	int64ID, err := strconv.ParseInt(storeID, 10, 64)
-	if err != nil {
+func (h *ProductHandler) GetProductsByFilters(c echo.Context) error {
+	var searchParams entities.ProductSearchParams
+
+	if err := c.Bind(&searchParams); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
 	}
-	products, err := h.productUseCase.GetProductsByStore(int64ID)
+
+	products, err := h.productUseCase.GetProductsByFilters(searchParams)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
-
-	return c.JSON(http.StatusOK, products)
-}
-
-// GetProductsByStoreAndCategory обрабатывает запрос на получение всех продуктов по ID магазина и ID категории
-func (h *ProductHandler) GetProductsByStoreAndCategory(c echo.Context) error {
-	storeID := c.Param("store_id")
-	int64StoreID, err := strconv.ParseInt(storeID, 10, 64)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
-	}
-
-	categoryID := c.Param("category_id")
-	int64CategoryID, err := strconv.ParseInt(categoryID, 10, 64)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
-	}
-
-	products, err := h.productUseCase.GetProductsByStoreAndCategory(int64StoreID, int64CategoryID)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
-	}
-
 	return c.JSON(http.StatusOK, products)
 }

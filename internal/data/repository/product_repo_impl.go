@@ -3,8 +3,10 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"marketplace/internal/domain/entities"
 	repository2 "marketplace/internal/domain/repository"
+	"strings"
 	"time"
 )
 
@@ -79,50 +81,58 @@ func (r *productRepositoryImpl) Delete(id int64) error {
 	return nil
 }
 
-func (r *productRepositoryImpl) FindAllByStore(storeID int64) ([]entities.Product, error) {
-	rows, err := r.db.Query(`SELECT id, name, description, price, quantity, category_id, store_id, created_at, updated_at 
-	                         FROM products WHERE store_id = $1`, storeID)
-	defer rows.Close()
-	if err != nil {
-		return nil, err
+func (r *productRepositoryImpl) FindProductsByParams(params entities.ProductSearchParams) ([]entities.Product, error) {
+	query := `SELECT id, name, description, price, quantity, category_id, store_id, created_at, updated_at FROM products`
+	var conditions []string
+	var args []interface{}
+
+	if params.StoreID != nil {
+		conditions = append(conditions, fmt.Sprintf("store_id = $%d", len(args)+1))
+		args = append(args, *params.StoreID)
 	}
+
+	if params.CategoryID != nil {
+		conditions = append(conditions, fmt.Sprintf("category_id = $%d", len(args)+1))
+		args = append(args, *params.CategoryID)
+	}
+
+	if params.MinPrice != nil {
+		conditions = append(conditions, fmt.Sprintf("price >= $%d", len(args)+1))
+		args = append(args, *params.MinPrice)
+	}
+
+	if params.MaxPrice != nil {
+		conditions = append(conditions, fmt.Sprintf("price <= $%d", len(args)+1))
+		args = append(args, *params.MaxPrice)
+	}
+
+	if params.Name != nil {
+		conditions = append(conditions, fmt.Sprintf("name ILIKE $%d", len(args)+1))
+		args = append(args, "%"+*params.Name+"%")
+	}
+
+	// Добавляем условия, если они есть
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("error executing query: %v", err)
+	}
+	defer rows.Close()
 
 	var products []entities.Product
 	for rows.Next() {
 		var product entities.Product
 		if err := rows.Scan(&product.ID, &product.Name, &product.Description, &product.Price, &product.Quantity, &product.CategoryID, &product.StoreID, &product.CreatedAt, &product.UpdatedAt); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error scanning row: %v", err)
 		}
 		products = append(products, product)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return products, nil
-}
-
-func (r *productRepositoryImpl) FindAllByStoreAndCategory(storeID int64, categoryID int64) ([]entities.Product, error) {
-	rows, err := r.db.Query(`SELECT id, name, description, price, quantity, category_id, store_id, created_at, updated_at 
-	                         FROM products WHERE store_id = $1 AND category_id = $2`, storeID, categoryID)
-	defer rows.Close()
-
-	if err != nil {
-		return nil, err
-	}
-
-	var products []entities.Product
-	for rows.Next() {
-		var product entities.Product
-		if err := rows.Scan(&product.ID, &product.Name, &product.Description, &product.Price, &product.Quantity, &product.CategoryID, &product.StoreID, &product.CreatedAt, &product.UpdatedAt); err != nil {
-			return nil, err
-		}
-		products = append(products, product)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error during rows iteration: %v", err)
 	}
 
 	return products, nil
