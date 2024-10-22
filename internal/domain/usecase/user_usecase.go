@@ -11,12 +11,10 @@ type UserUseCase struct {
 	userRepo repository.UserRepository
 }
 
-// NewUserUseCase Конструктор для создания новой UserUseCase
 func NewUserUseCase(userRepo repository.UserRepository) *UserUseCase {
 	return &UserUseCase{userRepo: userRepo}
 }
 
-// Register Реализация метода Register
 func (u *UserUseCase) Register(user entities.User) (*entities.Tokens, error) {
 	existingUser, err := u.userRepo.FindByEmail(user.Email)
 	if err == nil && existingUser.ID != 0 {
@@ -37,7 +35,6 @@ func (u *UserUseCase) Register(user entities.User) (*entities.Tokens, error) {
 	return tokenDetails.ToTokens(), nil
 }
 
-// Login Реализация метода Login
 func (u *UserUseCase) Login(email, password string) (*entities.Tokens, error) {
 	user, err := u.userRepo.FindByEmail(email)
 	if err != nil || user.Password != password { // Здесь должна быть логика хэширования пароля
@@ -53,7 +50,6 @@ func (u *UserUseCase) Login(email, password string) (*entities.Tokens, error) {
 	return tokenDetails.ToTokens(), nil
 }
 
-// GetUserByID Реализация метода GetUserByID
 func (u *UserUseCase) GetUserByID(id uint64) (entities.User, error) {
 	return u.userRepo.FindByID(id)
 }

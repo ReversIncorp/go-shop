@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"github.com/lib/pq"
 	"marketplace/internal/domain/entities"
 	repository2 "marketplace/internal/domain/repository"
 )
@@ -15,6 +16,31 @@ func NewUserRepository(db *sql.DB) repository2.UserRepository {
 	return &userRepositoryImpl{
 		db: db,
 	}
+}
+
+func (r *userRepositoryImpl) AddOwningStore(userID, storeID int64) error {
+	_, err := r.db.Exec(`UPDATE users SET owning_stores = array_append(owning_stores, $1) WHERE id = $2`, storeID, userID)
+	return err
+}
+
+func (r *userRepositoryImpl) IsOwnsStore(userID, storeID int64) (bool, error) {
+	var owningStores []int64
+	err := r.db.QueryRow(
+		"SELECT owning_stores FROM users WHERE id = $1",
+		userID,
+	).Scan(pq.Array(&owningStores))
+
+	if err != nil {
+		return false, err
+	}
+
+	for _, sID := range owningStores {
+		if sID == storeID {
+			return true, nil
+		}
+	}
+
+	return false, errors.New("user does not own this store")
 }
 
 func (r *userRepositoryImpl) Create(user entities.User) error {

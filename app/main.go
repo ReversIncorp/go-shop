@@ -19,7 +19,7 @@ func main() {
 	e := echo.New()
 
 	// Регистрация базы данных
-	if err := DI.RegisterDatabase(container); err != nil {
+	if err := DI.RegisterDatabases(container); err != nil {
 		fmt.Printf("Failed to register(or connect) db: %v\n", err)
 		return
 	}

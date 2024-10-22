@@ -19,8 +19,8 @@ func Container() *dig.Container {
 	return container
 }
 
-func RegisterDatabase(container *dig.Container) error {
-	return container.Provide(database.OpenDB)
+func RegisterDatabases(container *dig.Container) error {
+	return container.Provide(database.OpenPostgreSQL)
 }
 
 func RegisterDependencies(container *dig.Container) error {

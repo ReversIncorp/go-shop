@@ -1,23 +1,42 @@
 package usecase
 
 import (
+	"errors"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
 )
 
 // ProductUseCase реализует интерфейс ProductUseCase
 type ProductUseCase struct {
-	productRepo repository.ProductRepository
+	productRepo  repository.ProductRepository
+	storeRepo    repository.StoreRepository
+	userRepo     repository.UserRepository
+	categoryRepo repository.CategoryRepository
 }
 
 // NewProductUseCase создает новый экземпляр ProductUseCase
-func NewProductUseCase(productRepo repository.ProductRepository) *ProductUseCase {
-	return &ProductUseCase{productRepo: productRepo}
+func NewProductUseCase(productRepo repository.ProductRepository, storeRepo repository.StoreRepository, userRepo repository.UserRepository, categoryRepo repository.CategoryRepository) *ProductUseCase {
+	return &ProductUseCase{productRepo: productRepo, storeRepo: storeRepo, userRepo: userRepo, categoryRepo: categoryRepo}
 }
 
 // CreateProduct создает новый продукт
 func (p *ProductUseCase) CreateProduct(product entities.Product, uid int64) error {
-	return p.productRepo.Save(product, uid)
+	storeExists, err := p.storeRepo.IsExist(product.StoreID)
+	if err != nil || !storeExists {
+		return errors.New("store not found")
+	}
+
+	categoryBelongs, err := p.categoryRepo.IsBelongsToStore(product.CategoryID, product.StoreID)
+	if err != nil || !categoryBelongs {
+		return errors.New("category not found or not belongs this store")
+	}
+
+	isOwner, err := p.userRepo.IsOwnsStore(uid, product.StoreID)
+	if err != nil || !isOwner {
+		return errors.New("user does not owning this store")
+	}
+
+	return p.productRepo.Save(product)
 }
 
 // GetProductByID получает продукт по ID
@@ -27,12 +46,37 @@ func (p *ProductUseCase) GetProductByID(id int64) (entities.Product, error) {
 
 // UpdateProduct обновляет существующий продукт
 func (p *ProductUseCase) UpdateProduct(product entities.Product, uid int64) error {
-	return p.productRepo.Update(product, uid)
+	storeExists, err := p.storeRepo.IsExist(product.StoreID)
+	if err != nil || !storeExists {
+		return errors.New("store not found")
+	}
+
+	categoryBelongs, err := p.categoryRepo.IsBelongsToStore(product.CategoryID, product.StoreID)
+	if err != nil || !categoryBelongs {
+		return errors.New("category not found or not belongs this store")
+	}
+
+	isOwner, err := p.userRepo.IsOwnsStore(uid, product.StoreID)
+	if err != nil || !isOwner {
+		return errors.New("user does not owning this store")
+	}
+
+	return p.productRepo.Update(product)
 }
 
 // DeleteProduct удаляет продукт по ID
 func (p *ProductUseCase) DeleteProduct(id int64, uid int64) error {
-	return p.productRepo.Delete(id, uid)
+	product, err := p.productRepo.FindByID(id)
+	if err != nil {
+		return errors.New("product not found")
+	}
+
+	isOwner, err := p.userRepo.IsOwnsStore(uid, product.StoreID)
+	if err != nil || !isOwner {
+		return errors.New("user does not owning this store")
+	}
+
+	return p.productRepo.Delete(id)
 }
 
 // GetProductsByStore получает все продукты по ID магазина

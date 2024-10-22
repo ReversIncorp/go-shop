@@ -27,17 +27,18 @@ func (h *StoreHandler) CreateStore(c echo.Context) error {
 	}
 
 	userID := c.Get("user_id")
-	if userID != nil {
-		if uid, ok := userID.(float64); ok {
-			if err := h.storeUseCase.CreateStore(store, int64(uid)); err != nil {
-				return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
-			}
-
-			return c.JSON(http.StatusCreated, store)
-		}
+	uid, ok := userID.(float64)
+	if !ok || userID == nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid or missing user_id from token"})
 	}
 
-	return c.JSON(http.StatusBadRequest, echo.Map{"error": "Missing user_id from token"})
+	store.OwnerID = int64(uid)
+
+	if err := h.storeUseCase.CreateStore(store, int64(uid)); err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusCreated, store)
 }
 
 // GetStoreByID обрабатывает запрос на получение магазина по ID
@@ -72,17 +73,16 @@ func (h *StoreHandler) UpdateStore(c echo.Context) error {
 	store.ID = storeID
 
 	userID := c.Get("user_id")
-	if userID != nil {
-		if uid, ok := userID.(float64); ok {
-			if err := h.storeUseCase.UpdateStore(store, int64(uid)); err != nil {
-				return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
-			}
-
-			return c.JSON(http.StatusOK, store)
-		}
+	uid, ok := userID.(float64)
+	if !ok || userID == nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid or missing user_id from token"})
 	}
 
-	return c.JSON(http.StatusBadRequest, echo.Map{"error": "Missing user_id from token"})
+	if err := h.storeUseCase.UpdateStore(store, int64(uid)); err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, store)
 }
 
 // DeleteStore обрабатывает запрос на удаление магазина
@@ -94,17 +94,15 @@ func (h *StoreHandler) DeleteStore(c echo.Context) error {
 	}
 
 	userID := c.Get("user_id")
-	if userID != nil {
-		if uid, ok := userID.(float64); ok {
-			if err := h.storeUseCase.DeleteStore(int64ID, int64(uid)); err != nil {
-				return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
-			}
-
-			return c.NoContent(http.StatusNoContent)
-		}
+	uid, ok := userID.(float64)
+	if !ok || userID == nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid or missing user_id from token"})
 	}
 
-	return c.JSON(http.StatusBadRequest, echo.Map{"error": "Missing user_id from token"})
+	if err := h.storeUseCase.DeleteStore(int64ID, int64(uid)); err != nil {
+		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
+	}
+	return c.NoContent(http.StatusNoContent)
 }
 
 // GetAllStores обрабатывает запрос на получение всех магазинов

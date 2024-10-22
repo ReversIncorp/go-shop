@@ -27,16 +27,16 @@ func (h *CategoryHandler) CreateCategory(c echo.Context) error {
 	}
 
 	userID := c.Get("user_id")
-	if userID != nil {
-		if uid, ok := userID.(float64); ok {
-			if err := h.categoryUseCase.CreateCategory(category, int64(uid)); err != nil {
-				return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
-			}
-			return c.JSON(http.StatusCreated, category)
-		}
+	uid, ok := userID.(float64)
+	if !ok || userID == nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid or missing user_id from token"})
 	}
 
-	return c.JSON(http.StatusBadRequest, echo.Map{"error": "Missing user_id from token"})
+	if err := h.categoryUseCase.CreateCategory(category, int64(uid)); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
+	}
+	return c.JSON(http.StatusCreated, category)
+
 }
 
 // GetCategoryByID обрабатывает запрос на получение категории по ID
@@ -44,7 +44,7 @@ func (h *CategoryHandler) GetCategoryByID(c echo.Context) error {
 	id := c.Param("id")
 	int64ID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid category ID"})
 	}
 
 	category, err := h.categoryUseCase.GetCategoryByID(int64ID)
@@ -72,16 +72,15 @@ func (h *CategoryHandler) UpdateCategory(c echo.Context) error {
 	category.ID = categoryID
 
 	userID := c.Get("user_id")
-	if userID != nil {
-		if uid, ok := userID.(float64); ok {
-			if err := h.categoryUseCase.UpdateCategory(category, int64(uid)); err != nil {
-				return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
-			}
-			return c.JSON(http.StatusOK, category)
-		}
+	uid, ok := userID.(float64)
+	if !ok || userID == nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid or missing user_id from token"})
 	}
 
-	return c.JSON(http.StatusBadRequest, echo.Map{"error": "Missing user_id from token"})
+	if err := h.categoryUseCase.UpdateCategory(category, int64(uid)); err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, category)
 }
 
 // DeleteCategory обрабатывает запрос на удаление категории
@@ -93,16 +92,15 @@ func (h *CategoryHandler) DeleteCategory(c echo.Context) error {
 	}
 
 	userID := c.Get("user_id")
-	if userID != nil {
-		if uid, ok := userID.(float64); ok {
-			if err := h.categoryUseCase.DeleteCategory(int64ID, int64(uid)); err != nil {
-				return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
-			}
-			return c.NoContent(http.StatusNoContent)
-		}
+	uid, ok := userID.(float64)
+	if !ok || userID == nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid or missing user_id from token"})
 	}
 
-	return c.JSON(http.StatusBadRequest, echo.Map{"error": "Missing user_id from token"})
+	if err := h.categoryUseCase.DeleteCategory(int64ID, int64(uid)); err != nil {
+		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
+	}
+	return c.NoContent(http.StatusNoContent)
 }
 
 // GetAllCategoriesByStore обрабатывает запрос на получение всех категорий

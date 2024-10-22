@@ -5,14 +5,11 @@ import (
 	"errors"
 	"marketplace/internal/domain/entities"
 	repository2 "marketplace/internal/domain/repository"
-	"marketplace/pkg/utils"
-	"sync"
 	"time"
 )
 
 type categoryRepositoryImpl struct {
 	db *sql.DB
-	mu sync.Mutex
 }
 
 func NewCategoryRepository(db *sql.DB) repository2.CategoryRepository {
@@ -21,24 +18,49 @@ func NewCategoryRepository(db *sql.DB) repository2.CategoryRepository {
 	}
 }
 
-func (r *categoryRepositoryImpl) Save(category entities.Category, uid int64) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *categoryRepositoryImpl) IsExist(id int64) (bool, error) {
+	var existingStoreID int64
+	err := r.db.QueryRow(
+		"SELECT id FROM categories WHERE id = $1",
+		id,
+	).Scan(&existingStoreID)
 
-	storeExists, err := utils.CheckStoreExists(r.db, category.StoreID)
-	if err != nil || !storeExists {
-		return errors.New("store not found")
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, errors.New("category not found")
+	}
+	if err != nil {
+		return false, err
 	}
 
-	isOwner, err := utils.CheckUserOwnsStore(r.db, uid, category.StoreID)
-	if err != nil || !isOwner {
-		return errors.New("user does not own this store")
+	return true, nil
+}
+
+func (r *categoryRepositoryImpl) IsBelongsToStore(categoryID, storeID int64) (bool, error) {
+	var existingStoreID int64
+	err := r.db.QueryRow(
+		"SELECT store_id FROM categories WHERE id = $1",
+		categoryID,
+	).Scan(&existingStoreID)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, errors.New("category not found")
+		}
+		return false, err
 	}
 
+	if existingStoreID == storeID {
+		return true, nil
+	}
+
+	return false, errors.New("category does not belong to this store")
+}
+
+func (r *categoryRepositoryImpl) Save(category entities.Category) error {
 	category.CreatedAt = time.Now()
 	category.UpdatedAt = category.CreatedAt
 
-	_, err = r.db.Exec(`INSERT INTO categories (name, description, store_id, created_at, updated_at) 
+	_, err := r.db.Exec(`INSERT INTO categories (name, description, store_id, created_at, updated_at) 
                         VALUES ($1, $2, $3, $4, $5)`,
 		category.Name, category.Description, category.StoreID, category.CreatedAt, category.UpdatedAt)
 	if err != nil {
@@ -49,45 +71,25 @@ func (r *categoryRepositoryImpl) Save(category entities.Category, uid int64) err
 }
 
 func (r *categoryRepositoryImpl) FindByID(id int64) (entities.Category, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	var category entities.Category
 	err := r.db.QueryRow(`SELECT id, name, description, store_id, created_at, updated_at 
 	                      FROM categories WHERE id = $1`, id).
 		Scan(&category.ID, &category.Name, &category.Description, &category.StoreID, &category.CreatedAt, &category.UpdatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return entities.Category{}, errors.New("category not found")
+	}
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return entities.Category{}, errors.New("category not found")
-		}
 		return entities.Category{}, err
 	}
 
 	return category, nil
 }
 
-func (r *categoryRepositoryImpl) Update(category entities.Category, uid int64) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	var existingCategoryStoreID int64
-	err := r.db.QueryRow("SELECT store_id FROM categories WHERE id = $1", category.ID).Scan(&existingCategoryStoreID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return errors.New("category not found")
-		}
-		return err
-	}
-
-	isOwner, err := utils.CheckUserOwnsStore(r.db, uid, existingCategoryStoreID)
-	if err != nil || !isOwner {
-		return errors.New("user does not own this store")
-	}
-
+func (r *categoryRepositoryImpl) Update(category entities.Category) error {
 	category.UpdatedAt = time.Now()
 
 	//Разрешаем менять все данные кроме айди стора, его нельзя
-	_, err = r.db.Exec(`UPDATE categories 
+	_, err := r.db.Exec(`UPDATE categories 
                         SET name = $1, description = $2, updated_at = $3
                         WHERE id = $4`,
 		category.Name, category.Description, category.UpdatedAt, category.ID)
@@ -98,43 +100,22 @@ func (r *categoryRepositoryImpl) Update(category entities.Category, uid int64) e
 	return nil
 }
 
-func (r *categoryRepositoryImpl) Delete(id int64, uid int64) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	var existingCategoryStoreID int64
-	err := r.db.QueryRow("SELECT store_id FROM categories WHERE id = $1", id).Scan(&existingCategoryStoreID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return errors.New("category not found")
-		}
-		return err
-	}
-
-	isOwner, err := utils.CheckUserOwnsStore(r.db, uid, existingCategoryStoreID)
-	if err != nil || !isOwner {
-		return errors.New("user does not own this store")
-	}
-
-	_, err = r.db.Exec("DELETE FROM categories WHERE id = $1", id)
+func (r *categoryRepositoryImpl) Delete(id int64) error {
+	_, err := r.db.Exec("DELETE FROM categories WHERE id = $1", id)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
 func (r *categoryRepositoryImpl) FindAllByStore(storeID int64) ([]entities.Category, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	rows, err := r.db.Query(`SELECT id, name, description, store_id, created_at, updated_at 
                              FROM categories 
                              WHERE store_id = $1`, storeID)
+	defer rows.Close()
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var categories []entities.Category
 	for rows.Next() {
