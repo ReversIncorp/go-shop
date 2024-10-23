@@ -1,9 +1,10 @@
 package repository
 
 import (
-	"github.com/labstack/echo/v4"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/enums"
+
+	"github.com/labstack/echo/v4"
 )
 
 type JWTRepository interface {

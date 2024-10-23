@@ -1,11 +1,13 @@
-package usecase
+package userUsecase
 
 import (
 	"errors"
-	"github.com/labstack/echo/v4"
+	"marketplace/config"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/enums"
 	"marketplace/internal/domain/repository"
+
+	"github.com/labstack/echo/v4"
 )
 
 type UserUseCase struct {
@@ -61,30 +63,30 @@ func (u *UserUseCase) UpdateToken(id uint64) (entities.User, error) {
 	return u.userRepo.FindByID(id)
 }
 
+// RefreshToken Реализация метода RefreshToken
 func (u *UserUseCase) createTokens(userId uint64, ctx echo.Context) (*entities.Tokens, error) {
-	{
-		accessToken, err := GenerateToken(userId, enums.Access)
-		refreshToken, err := GenerateToken(userId, enums.Refresh)
-		if err != nil {
-			return nil, err
-		}
-
-		if err = u.tokenRepo.SaveToken(
-			userId,
-			accessToken,
-			enums.Access,
-			ctx,
-		); err != nil {
-			return nil, err
-		}
-		if err = u.tokenRepo.SaveToken(
-			userId,
-			refreshToken,
-			enums.Refresh,
-			ctx,
-		); err != nil {
-			return nil, err
-		}
-		return &entities.Tokens{RefreshToken: refreshToken, AccessToken: accessToken}, nil
+	accessToken, err := GenerateToken(userId, enums.Access, config.GetConfig().JWTKey)
+	refreshToken, err := GenerateToken(userId, enums.Refresh, config.GetConfig().JWTKey)
+	if err != nil {
+		return nil, err
 	}
+
+	if err = u.tokenRepo.SaveToken(
+		userId,
+		accessToken,
+		enums.Access,
+		ctx,
+	); err != nil {
+		return nil, err
+	}
+	if err = u.tokenRepo.SaveToken(
+		userId,
+		refreshToken,
+		enums.Refresh,
+		ctx,
+	); err != nil {
+		return nil, err
+	}
+
+	return &entities.Tokens{RefreshToken: refreshToken, AccessToken: accessToken}, nil
 }

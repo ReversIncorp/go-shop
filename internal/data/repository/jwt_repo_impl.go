@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/go-redis/redis/v8"
-	"github.com/labstack/echo/v4"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/enums"
 	"marketplace/internal/domain/repository"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/labstack/echo/v4"
 )
 
 // redisJWTRepository - реализация JWTRepository для Redis

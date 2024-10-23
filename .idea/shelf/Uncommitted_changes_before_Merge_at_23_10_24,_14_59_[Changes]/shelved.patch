@@ -1,0 +1,844 @@
+Index: app/main.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package main\n\nimport (\n\t\"fmt\"\n\t\"marketplace/pkg/di\"\n\n\t\"github.com/joho/godotenv\"\n\t\"github.com/labstack/echo/v4\"\n)\n\nfunc main() {\n\t// Load .env file\n\tvar err error\n\terr = godotenv.Load(\"../.env\")\n\tif err != nil {\n\t\terr := fmt.Sprintf(\"Error loading .env file.\\n%s\", err)\n\t\tpanic(err)\n\t}\n\tcontainer := di.Container()\n\te := echo.New()\n\n\t// Регистрация всех зависимостей\n\terr = di.RegisterDependencies(container)\n\tif err != nil {\n\t\tpanic(fmt.Sprintf(\"Failed to register dependencies: %v\\n\", err))\n\t}\n\n\t// Регистрация midleware\n\tif err = di.RegisterMiddleware(container, e); err != nil {\n\t\terr := fmt.Sprintf(\"Failed to register midleware: %v\\n\", err)\n\t\tpanic(err)\n\t}\n\n\tif err = di.RegisterRoutes(container, e); err != nil {\n\t\tpanic(fmt.Sprintf(\"Failed to register routes: %v\\n\", err))\n\t}\n\t// Запуск сервера\n\te.Logger.Fatal(e.Start(\":8080\"))\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/main.go b/app/main.go
+--- a/app/main.go	(revision 0effcea7acac9a98d85157cec6c816200f9564da)
++++ b/app/main.go	(date 1729683292668)
+@@ -11,7 +11,7 @@
+ func main() {
+ 	// Load .env file
+ 	var err error
+-	err = godotenv.Load("../.env")
++	err = godotenv.Load(".env")
+ 	if err != nil {
+ 		err := fmt.Sprintf("Error loading .env file.\n%s", err)
+ 		panic(err)
+@@ -19,6 +19,10 @@
+ 	container := di.Container()
+ 	e := echo.New()
+ 
++	if err := di.RegisterDatabases(container); err != nil {
++		fmt.Printf("Failed to register databases: %v\n", err)
++		return
++	}
+ 	// Регистрация всех зависимостей
+ 	err = di.RegisterDependencies(container)
+ 	if err != nil {
+Index: .env
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>APP_ENV=Dev\nJWT_SECRET_KEY=your-secret-key
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.env b/.env
+--- a/.env	(revision 0effcea7acac9a98d85157cec6c816200f9564da)
++++ b/.env	(date 1729672884040)
+@@ -1,2 +1,3 @@
+ APP_ENV=Dev
+-JWT_SECRET_KEY=your-secret-key
+\ No newline at end of file
++JWT_SECRET_KEY=your-secret-key
++REDIS_ADDR=localhost:6379
+\ No newline at end of file
+Index: delivery/handlers/user_handler.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package handlers\n\nimport (\n\t\"marketplace/internal/domain/entities\"\n\tuserusecase \"marketplace/internal/domain/usecase/user_ucecase\"\n\t\"net/http\"\n\t\"strconv\"\n\n\t\"github.com/go-playground/validator/v10\"\n\t\"github.com/labstack/echo/v4\"\n)\n\n// UserHandler обрабатывает HTTP-запросы для пользователей\ntype UserHandler struct {\n\tuserUseCase *userusecase.UserUseCase\n\tvalidator   *validator.Validate\n}\n\n// NewUserHandler создает новый экземпляр UserHandler\nfunc NewUserHandler(userUseCase *userusecase.UserUseCase, validate *validator.Validate) *UserHandler {\n\treturn &UserHandler{userUseCase: userUseCase, validator: validate}\n}\n\n// Register обрабатывает запрос на регистрацию пользователя\nfunc (h *UserHandler) Register(c echo.Context) error {\n\tvar user entities.User\n\n\tif err := c.Bind(&user); err != nil {\n\t\treturn c.JSON(http.StatusBadRequest, echo.Map{\"error\": \"Invalid input\"})\n\t}\n\tif err := h.validator.Struct(user); err != nil {\n\t\treturn c.JSON(http.StatusBadRequest, err.Error())\n\t}\n\n\t// Вызов метода Register и получение токенов\n\ttokenDetails, err := h.userUseCase.Register(user)\n\tif err != nil {\n\t\treturn c.JSON(http.StatusInternalServerError, echo.Map{\"error\": err.Error()})\n\t}\n\n\t// Возвращаем информацию о пользователе и токенах\n\treturn c.JSON(http.StatusCreated, echo.Map{\n\t\t\"access_token\":  tokenDetails.AccessToken,\n\t\t\"refresh_token\": tokenDetails.RefreshToken,\n\t})\n}\n\n// Login обрабатывает запрос на вход пользователя\nfunc (h *UserHandler) Login(c echo.Context) error {\n\tvar credentials entities.LoginCredentials\n\tif err := c.Bind(&credentials); err != nil {\n\t\treturn c.JSON(http.StatusBadRequest, echo.Map{\"error\": \"Invalid input\"})\n\t}\n\tif err := h.validator.Struct(credentials); err != nil {\n\t\treturn c.JSON(http.StatusBadRequest, err.Error())\n\t}\n\n\t// Вызов метода Login и получение токенов\n\ttokenDetails, err := h.userUseCase.Login(credentials.Email, credentials.Password)\n\tif err != nil {\n\t\treturn c.JSON(http.StatusUnauthorized, echo.Map{\"error\": err.Error()})\n\t}\n\n\t// Возвращаем токены\n\treturn c.JSON(http.StatusOK, echo.Map{\n\t\t\"access_token\":  tokenDetails.AccessToken,\n\t\t\"refresh_token\": tokenDetails.RefreshToken,\n\t})\n}\n\n// GetUserByID обрабатывает запрос на получение информации о пользователе по ID\nfunc (h *UserHandler) GetUserByID(c echo.Context) error {\n\tid := c.Param(\"id\")\n\tuint64ID, err := strconv.ParseUint(id, 10, 64)\n\tif err != nil {\n\t\treturn c.JSON(http.StatusBadRequest, err.Error())\n\t}\n\tuser, err := h.userUseCase.GetUserByID(uint64ID)\n\tif err != nil {\n\t\treturn c.JSON(http.StatusNotFound, echo.Map{\"error\": err.Error()})\n\t}\n\n\treturn c.JSON(http.StatusOK, user)\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/delivery/handlers/user_handler.go b/delivery/handlers/user_handler.go
+--- a/delivery/handlers/user_handler.go	(revision 0effcea7acac9a98d85157cec6c816200f9564da)
++++ b/delivery/handlers/user_handler.go	(date 1729672883975)
+@@ -33,16 +33,13 @@
+ 	}
+ 
+ 	// Вызов метода Register и получение токенов
+-	tokenDetails, err := h.userUseCase.Register(user)
++	tokens, err := h.userUseCase.Register(user, c)
+ 	if err != nil {
+ 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+ 	}
+ 
+ 	// Возвращаем информацию о пользователе и токенах
+-	return c.JSON(http.StatusCreated, echo.Map{
+-		"access_token":  tokenDetails.AccessToken,
+-		"refresh_token": tokenDetails.RefreshToken,
+-	})
++	return c.JSON(http.StatusCreated, tokens.CleanOutput())
+ }
+ 
+ // Login обрабатывает запрос на вход пользователя
+@@ -56,16 +53,13 @@
+ 	}
+ 
+ 	// Вызов метода Login и получение токенов
+-	tokenDetails, err := h.userUseCase.Login(credentials.Email, credentials.Password)
++	tokens, err := h.userUseCase.Login(credentials.Email, credentials.Password, c)
+ 	if err != nil {
+ 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": err.Error()})
+ 	}
+ 
+ 	// Возвращаем токены
+-	return c.JSON(http.StatusOK, echo.Map{
+-		"access_token":  tokenDetails.AccessToken,
+-		"refresh_token": tokenDetails.RefreshToken,
+-	})
++	return c.JSON(http.StatusOK, tokens.CleanOutput())
+ }
+ 
+ // GetUserByID обрабатывает запрос на получение информации о пользователе по ID
+@@ -82,3 +76,18 @@
+ 
+ 	return c.JSON(http.StatusOK, user)
+ }
++
++// UpdateToken обрабатывает запрос на получение информации о пользователе по ID
++func (h *UserHandler) UpdateToken(c echo.Context) error {
++	id := c.Param("id")
++	uint64ID, err := strconv.ParseUint(id, 10, 64)
++	if err != nil {
++		return c.JSON(http.StatusBadRequest, err.Error())
++	}
++	user, err := h.userUseCase.GetUserByID(uint64ID)
++	if err != nil {
++		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
++	}
++
++	return c.JSON(http.StatusOK, user)
++}
+Index: internal/domain/usecase/user_ucecase/user_usecase.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package userUsecase\n\nimport (\n\t\"errors\"\n\t\"marketplace/config\"\n\t\"marketplace/internal/domain/entities\"\n\t\"marketplace/internal/domain/repository\"\n)\n\ntype UserUseCase struct {\n\tuserRepo repository.UserRepository\n}\n\n// NewUserUseCase Конструктор для создания новой UserUseCase\nfunc NewUserUseCase(userRepo repository.UserRepository) *UserUseCase {\n\treturn &UserUseCase{userRepo: userRepo}\n}\n\n// Register Реализация метода Register\nfunc (u *UserUseCase) Register(user entities.User) (*entities.Tokens, error) {\n\texistingUser, err := u.userRepo.FindByEmail(user.Email)\n\tif err == nil && existingUser.ID != 0 {\n\t\treturn nil, errors.New(\"user already exists\")\n\t}\n\n\t// Сохраняем пользователя в репозиторий\n\tif err := u.userRepo.Create(user); err != nil {\n\t\treturn nil, err\n\t}\n\n\t// Генерация токенов\n\ttokenDetails, err := GenerateTokens(user.ID, config.GetConfig().JWTKey)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn tokenDetails.ToTokens(), nil\n}\n\n// Login Реализация метода Login\nfunc (u *UserUseCase) Login(email, password string) (*entities.Tokens, error) {\n\tuser, err := u.userRepo.FindByEmail(email)\n\tif err != nil || user.Password != password { // Здесь должна быть логика хэширования пароля\n\t\treturn nil, errors.New(\"invalid credentials\")\n\t}\n\n\t// Генерация токенов\n\ttokenDetails, err := GenerateTokens(user.ID, config.GetConfig().JWTKey)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn tokenDetails.ToTokens(), nil\n}\n\n// GetUserByID Реализация метода GetUserByID\nfunc (u *UserUseCase) GetUserByID(id uint64) (entities.User, error) {\n\treturn u.userRepo.FindByID(id)\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/internal/domain/usecase/user_ucecase/user_usecase.go b/internal/domain/usecase/user_ucecase/user_usecase.go
+--- a/internal/domain/usecase/user_ucecase/user_usecase.go	(revision 0effcea7acac9a98d85157cec6c816200f9564da)
++++ b/internal/domain/usecase/user_ucecase/user_usecase.go	(date 1729675871627)
+@@ -4,20 +4,24 @@
+ 	"errors"
+ 	"marketplace/config"
+ 	"marketplace/internal/domain/entities"
++	"marketplace/internal/domain/enums"
+ 	"marketplace/internal/domain/repository"
++
++	"github.com/labstack/echo/v4"
+ )
+ 
+ type UserUseCase struct {
+-	userRepo repository.UserRepository
++	userRepo  repository.UserRepository
++	tokenRepo repository.JWTRepository
+ }
+ 
+ // NewUserUseCase Конструктор для создания новой UserUseCase
+-func NewUserUseCase(userRepo repository.UserRepository) *UserUseCase {
+-	return &UserUseCase{userRepo: userRepo}
++func NewUserUseCase(userRepo repository.UserRepository, tokenRepo repository.JWTRepository) *UserUseCase {
++	return &UserUseCase{userRepo: userRepo, tokenRepo: tokenRepo}
+ }
+ 
+ // Register Реализация метода Register
+-func (u *UserUseCase) Register(user entities.User) (*entities.Tokens, error) {
++func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.Tokens, error) {
+ 	existingUser, err := u.userRepo.FindByEmail(user.Email)
+ 	if err == nil && existingUser.ID != 0 {
+ 		return nil, errors.New("user already exists")
+@@ -27,33 +31,62 @@
+ 	if err := u.userRepo.Create(user); err != nil {
+ 		return nil, err
+ 	}
+-
+-	// Генерация токенов
+-	tokenDetails, err := GenerateTokens(user.ID, config.GetConfig().JWTKey)
++	tokens, err := u.createTokens(user.ID, ctx)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+-
+-	return tokenDetails.ToTokens(), nil
++	return tokens, nil
+ }
+ 
+ // Login Реализация метода Login
+-func (u *UserUseCase) Login(email, password string) (*entities.Tokens, error) {
++func (u *UserUseCase) Login(email, password string, ctx echo.Context) (*entities.Tokens, error) {
+ 	user, err := u.userRepo.FindByEmail(email)
+ 	if err != nil || user.Password != password { // Здесь должна быть логика хэширования пароля
+ 		return nil, errors.New("invalid credentials")
+ 	}
+ 
+-	// Генерация токенов
+-	tokenDetails, err := GenerateTokens(user.ID, config.GetConfig().JWTKey)
++	tokens, err := u.createTokens(user.ID, ctx)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+ 
+-	return tokenDetails.ToTokens(), nil
++	return tokens, nil
+ }
+ 
+ // GetUserByID Реализация метода GetUserByID
+ func (u *UserUseCase) GetUserByID(id uint64) (entities.User, error) {
+ 	return u.userRepo.FindByID(id)
+ }
++
++// UpdateToken Реализация метода GetUserByID
++func (u *UserUseCase) UpdateToken(id uint64) (entities.User, error) {
++	return u.userRepo.FindByID(id)
++}
++
++// RefreshToken Реализация метода RefreshToken
++func (u *UserUseCase) createTokens(userId uint64, ctx echo.Context) (*entities.Tokens, error) {
++	accessToken, err := GenerateToken(userId, enums.Access, config.GetConfig().JWTKey)
++	refreshToken, err := GenerateToken(userId, enums.Refresh, config.GetConfig().JWTKey)
++	if err != nil {
++		return nil, err
++	}
++
++	if err = u.tokenRepo.SaveToken(
++		userId,
++		accessToken,
++		enums.Access,
++		ctx,
++	); err != nil {
++		return nil, err
++	}
++	if err = u.tokenRepo.SaveToken(
++		userId,
++		refreshToken,
++		enums.Refresh,
++		ctx,
++	); err != nil {
++		return nil, err
++	}
++
++	return &entities.Tokens{RefreshToken: refreshToken.Token, AccessToken: accessToken.Token}, nil
++}
+Index: pkg/di/di_container.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package di\n\nimport (\n\t\"fmt\"\n\t\"marketplace/delivery/handlers\"\n\t\"marketplace/delivery/middleware\"\n\t\"marketplace/internal/data/repository\"\n\tproductUsecase \"marketplace/internal/domain/usecase/product_usecase\"\n\tstoreUsecase \"marketplace/internal/domain/usecase/store_usecase\"\n\tuserUsecase \"marketplace/internal/domain/usecase/user_ucecase\"\n\t\"marketplace/pkg/utils\"\n\t\"os\"\n\n\t\"github.com/labstack/echo/v4\"\n\t\"go.uber.org/dig\"\n)\n\nvar container = dig.New()\n\nfunc Container() *dig.Container {\n\treturn container\n}\n\nfunc RegisterDependencies(container *dig.Container) error {\n\tif err := container.Provide(utils.AppValidate); err != nil {\n\t\treturn err\n\t}\n\t// Регистрация логгера\n\tif err := container.Provide(middleware.AppLoggersSingleton); err != nil {\n\t\treturn err\n\t}\n\t// Регистрация репозиториев\n\tif err := container.Provide(repository.NewUserRepository); err != nil {\n\t\treturn err\n\t}\n\tif err := container.Provide(repository.NewProductRepository); err != nil {\n\t\treturn err\n\t}\n\tif err := container.Provide(repository.NewStoreRepository); err != nil {\n\t\treturn err\n\t}\n\n\t// Регистрация use cases\n\tif err := container.Provide(userUsecase.NewUserUseCase); err != nil {\n\t\treturn err\n\t}\n\tif err := container.Provide(productUsecase.NewProductUseCase); err != nil {\n\t\treturn err\n\t}\n\tif err := container.Provide(storeUsecase.NewStoreUseCase); err != nil {\n\t\treturn err\n\t}\n\n\t// Регистрация обработчиков\n\tif err := container.Provide(handlers.NewUserHandler); err != nil {\n\t\treturn err\n\t}\n\tif err := container.Provide(handlers.NewProductHandler); err != nil {\n\t\treturn err\n\t}\n\tif err := container.Provide(handlers.NewStoreHandler); err != nil {\n\t\treturn err\n\t}\n\n\treturn nil\n}\n\nfunc RegisterMiddleware(container *dig.Container, e *echo.Echo) error {\n\t// Используем логгер из контейнера\n\tvar httpLogger *middleware.AppLoggers\n\tif err := container.Invoke(func(logger *middleware.AppLoggers) {\n\t\thttpLogger = logger\n\t}); err != nil {\n\t\treturn fmt.Errorf(\"failed to invoke logger: %w\", err)\n\t}\n\n\t// Добавляем midleware для логирования в зависимости от окружения\n\tif os.Getenv(\"APP_ENV\") == \"Dev\" {\n\t\te.Use(httpLogger.LoggingRequestMiddleware)\n\t\te.Use(httpLogger.LoggingResponseMiddleware)\n\t}\n\n\treturn nil\n}\n\nfunc RegisterRoutes(container *dig.Container, e *echo.Echo) error {\n\t// Инициализация HTTP-хэндлеров\n\tvar userHandler *handlers.UserHandler\n\tvar productHandler *handlers.ProductHandler\n\tvar storeHandler *handlers.StoreHandler\n\n\t// Получаем хэндлеры через контейнер\n\terr := container.Invoke(func(uh *handlers.UserHandler, ph *handlers.ProductHandler, sh *handlers.StoreHandler) {\n\t\tuserHandler = uh\n\t\tproductHandler = ph\n\t\tstoreHandler = sh\n\t})\n\tif err != nil {\n\t\terr := fmt.Errorf(fmt.Sprintf(\"Failed to invoke handlers: %v\\n\", err))\n\t\treturn err\n\t}\n\n\tauthorizedScope := e.Group(\"\")\n\tauthorizedScope.Use(middleware.JWTMiddleware)\n\n\t// Регистрация маршрутов для пользователей\n\te.POST(\"/users\", userHandler.Register)\n\te.POST(\"/users/login\", userHandler.Login)\n\n\t// Регистрация маршрутов для продуктов\n\tauthorizedScope.POST(\"/products\", productHandler.CreateProduct)\n\tauthorizedScope.GET(\"/products/:id\", productHandler.GetProductByID)\n\tauthorizedScope.PUT(\"/products/:id\", productHandler.UpdateProduct)\n\tauthorizedScope.DELETE(\"/products/:id\", productHandler.DeleteProduct)\n\tauthorizedScope.GET(\"/stores/:store_id/products\", productHandler.GetProductsByStore)\n\n\t// Регистрация маршрутов для магазинов\n\tauthorizedScope.POST(\"/stores\", storeHandler.CreateStore)\n\tauthorizedScope.GET(\"/stores/:id\", storeHandler.GetStoreByID)\n\tauthorizedScope.PUT(\"/stores/:id\", storeHandler.UpdateStore)\n\tauthorizedScope.DELETE(\"/stores/:id\", storeHandler.DeleteStore)\n\tauthorizedScope.GET(\"/stores\", storeHandler.GetAllStores)\n\treturn nil\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/pkg/di/di_container.go b/pkg/di/di_container.go
+--- a/pkg/di/di_container.go	(revision 0effcea7acac9a98d85157cec6c816200f9564da)
++++ b/pkg/di/di_container.go	(date 1729672884030)
+@@ -11,6 +11,7 @@
+ 	"marketplace/pkg/utils"
+ 	"os"
+ 
++	"github.com/go-redis/redis/v8"
+ 	"github.com/labstack/echo/v4"
+ 	"go.uber.org/dig"
+ )
+@@ -21,6 +22,28 @@
+ 	return container
+ }
+ 
++func RegisterDatabases(container *dig.Container) error {
++	if err := container.Provide(registerRedisClient); err != nil {
++		return err
++	}
++	return nil
++}
++
++func registerRedisClient() (*redis.Client, error) {
++	redisClient := redis.NewClient(
++		&redis.Options{
++			Addr:     os.Getenv("REDIS_ADDR"),
++			Password: "",
++			DB:       0,
++		},
++	)
++	pong, err := redisClient.Ping(redisClient.Context()).Result()
++	if pong != "PONG" || err != nil {
++		return nil, fmt.Errorf("failed to connect to Redis: %v", err)
++	}
++	return redisClient, nil
++}
++
+ func RegisterDependencies(container *dig.Container) error {
+ 	if err := container.Provide(utils.AppValidate); err != nil {
+ 		return err
+@@ -39,6 +62,9 @@
+ 	if err := container.Provide(repository.NewStoreRepository); err != nil {
+ 		return err
+ 	}
++	if err := container.Provide(repository.NewRedisJWTRepository); err != nil {
++		return err
++	}
+ 
+ 	// Регистрация use cases
+ 	if err := container.Provide(userUsecase.NewUserUseCase); err != nil {
+Index: internal/domain/entities/tokens.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package entities\n\ntype Tokens struct {\n\tRefreshToken string `json:\"refresh_token\"`\n\tAccessToken  string `json:\"access_token\"`\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/internal/domain/entities/tokens.go b/internal/domain/entities/tokens.go
+--- a/internal/domain/entities/tokens.go	(revision 0effcea7acac9a98d85157cec6c816200f9564da)
++++ b/internal/domain/entities/tokens.go	(date 1729672883992)
+@@ -4,3 +4,10 @@
+ 	RefreshToken string `json:"refresh_token"`
+ 	AccessToken  string `json:"access_token"`
+ }
++
++func (t *Tokens) CleanOutput() map[string]string {
++	return map[string]string{
++		"access_token":  t.AccessToken,
++		"refresh_token": t.RefreshToken,
++	}
++}
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"AutoImportSettings\">\n    <option name=\"autoReloadType\" value=\"ALL\" />\n  </component>\n  <component name=\"ChangeListManager\">\n    <list default=\"true\" id=\"ca4a884e-17d5-4136-83e4-ef6379b33d18\" name=\"Changes\" comment=\"\">\n      <change afterPath=\"$PROJECT_DIR$/.golangci.yaml\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/.idea/.gitignore\" beforeDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/.idea/.name\" beforeDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/.idea/modules.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/modules.xml\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/README.md\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/README.md\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/app/main.go\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/app/main.go\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/config/config.go\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/config/config.go\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/delivery/handlers/product_handler.go\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/delivery/handlers/product_handler.go\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/delivery/handlers/store_handler.go\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/delivery/handlers/store_handler.go\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/delivery/handlers/user_handler.go\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/delivery/handlers/user_handler.go\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/delivery/middleware/auth.go\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/delivery/middleware/auth.go\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/delivery/middleware/logger.go\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/delivery/middleware/logger.go\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/delivery/wrappers/response_writer_wrapper.go\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/delivery/wrappers/response_writer_wrapper.go\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/go.mod\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/go.mod\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/go.sum\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/go.sum\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/internal/domain/usecase/product_usecase.go\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/internal/domain/usecase/product_usecase/product_usecase.go\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/internal/domain/usecase/store_usecase.go\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/internal/domain/usecase/store_usecase/store_usecase.go\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/internal/domain/usecase/user_usecase.go\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/internal/domain/usecase/user_ucecase/user_usecase.go\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/pkg/DI/di_container.go\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/pkg/di/di_container.go\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/pkg/utils/auto_format_json.go\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/pkg/utils/auto_format_json.go\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/pkg/utils/jwt_helper.go\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/internal/domain/usecase/user_ucecase/jwt_helper.go\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/pkg/utils/validator.go\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/pkg/utils/validator.go\" afterDir=\"false\" />\n    </list>\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\n  </component>\n  <component name=\"GOROOT\" url=\"file:///usr/local/go\" />\n  <component name=\"Git.Settings\">\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\n  </component>\n  <component name=\"GitHubPullRequestSearchHistory\"><![CDATA[{\n  \"history\": [\n    {\n      \"state\": \"OPEN\"\n    }\n  ],\n  \"lastFilter\": {\n    \"state\": \"OPEN\"\n  }\n}]]></component>\n  <component name=\"GithubPullRequestsUISettings\">{\n  &quot;selectedUrlAndAccountId&quot;: {\n    &quot;url&quot;: &quot;https://github.com/nemoRevers/go-shop.git&quot;,\n    &quot;accountId&quot;: &quot;73c83c85-1883-4ba2-b267-6d472d8c54f9&quot;\n  }\n}</component>\n  <component name=\"ProblemsViewState\">\n    <option name=\"selectedTabId\" value=\"DEPENDENCY_CHECKER_PROBLEMS_TAB\" />\n  </component>\n  <component name=\"ProjectColorInfo\">{\n  &quot;customColor&quot;: &quot;&quot;,\n  &quot;associatedIndex&quot;: 3\n}</component>\n  <component name=\"ProjectId\" id=\"2nl8hnafbCr6Pk91KswvVxJwXhI\" />\n  <component name=\"ProjectViewState\">\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\n    <option name=\"showLibraryContents\" value=\"true\" />\n  </component>\n  <component name=\"PropertiesComponent\"><![CDATA[{\n  \"keyToString\": {\n    \"Go Build.go build marketplace.executor\": \"Run\",\n    \"Go Build.go build marketplace/app.executor\": \"Run\",\n    \"RunOnceActivity.ShowReadmeOnStart\": \"true\",\n    \"RunOnceActivity.go.formatter.settings.were.checked\": \"true\",\n    \"RunOnceActivity.go.migrated.go.modules.settings\": \"true\",\n    \"RunOnceActivity.go.modules.go.list.on.any.changes.was.set\": \"true\",\n    \"com.codeium.enabled\": \"true\",\n    \"git-widget-placeholder\": \"feature/linter\",\n    \"go.import.settings.migrated\": \"true\",\n    \"go.sdk.automatically.set\": \"true\",\n    \"last.edited.regexp\": \"Sample Text\",\n    \"last_opened_file_path\": \"/Users/alexsavko\",\n    \"node.js.detected.package.eslint\": \"true\",\n    \"node.js.selected.package.eslint\": \"(autodetect)\",\n    \"nodejs_package_manager_path\": \"npm\",\n    \"run.code.analysis.last.selected.profile\": \"pProject Default\",\n    \"settings.editor.selected.configurable\": \"preference.GoLinterConfigurable\"\n  }\n}]]></component>\n  <component name=\"RecentsManager\">\n    <key name=\"MoveFile.RECENT_KEYS\">\n      <recent name=\"$PROJECT_DIR$/internal/domain/usecase/store_usecase\" />\n      <recent name=\"$PROJECT_DIR$/internal/domain/usecase/product_usecase\" />\n      <recent name=\"$PROJECT_DIR$/internal/domain/usecase/user_ucecase\" />\n      <recent name=\"$PROJECT_DIR$/internal/domain/usecase/use_ucecase\" />\n    </key>\n  </component>\n  <component name=\"RunManager\">\n    <configuration name=\"go build marketplace/app\" type=\"GoApplicationRunConfiguration\" factoryName=\"Go Application\" nameIsGenerated=\"true\">\n      <module name=\"marketplace\" />\n      <working_directory value=\"$PROJECT_DIR$\" />\n      <EXTENSION ID=\"net.ashald.envfile\">\n        <option name=\"IS_ENABLED\" value=\"false\" />\n        <option name=\"IS_SUBST\" value=\"false\" />\n        <option name=\"IS_PATH_MACRO_SUPPORTED\" value=\"false\" />\n        <option name=\"IS_IGNORE_MISSING_FILES\" value=\"false\" />\n        <option name=\"IS_ENABLE_EXPERIMENTAL_INTEGRATIONS\" value=\"false\" />\n        <ENTRIES>\n          <ENTRY IS_ENABLED=\"true\" PARSER=\"runconfig\" IS_EXECUTABLE=\"false\" />\n        </ENTRIES>\n      </EXTENSION>\n      <kind value=\"PACKAGE\" />\n      <package value=\"marketplace/app\" />\n      <directory value=\"$PROJECT_DIR$\" />\n      <filePath value=\"$PROJECT_DIR$\" />\n      <method v=\"2\" />\n    </configuration>\n  </component>\n  <component name=\"SharedIndexes\">\n    <attachedChunks>\n      <set>\n        <option value=\"bundled-gosdk-5df93f7ad4aa-df9ad98b711f-org.jetbrains.plugins.go.sharedIndexes.bundled-GO-242.23339.24\" />\n        <option value=\"bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-GO-242.23339.24\" />\n      </set>\n    </attachedChunks>\n  </component>\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\n  <component name=\"TypeScriptGeneratedFilesManager\">\n    <option name=\"version\" value=\"3\" />\n  </component>\n  <component name=\"Vcs.Log.Tabs.Properties\">\n    <option name=\"TAB_STATES\">\n      <map>\n        <entry key=\"MAIN\">\n          <value>\n            <State>\n              <option name=\"FILTERS\">\n                <map>\n                  <entry key=\"branch\">\n                    <value>\n                      <list>\n                        <option value=\"origin/postgreSQL\" />\n                      </list>\n                    </value>\n                  </entry>\n                </map>\n              </option>\n            </State>\n          </value>\n        </entry>\n      </map>\n    </option>\n  </component>\n  <component name=\"VgoProject\">\n    <settings-migrated>true</settings-migrated>\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision 0effcea7acac9a98d85157cec6c816200f9564da)
++++ b/.idea/workspace.xml	(date 1729684297733)
+@@ -4,28 +4,25 @@
+     <option name="autoReloadType" value="ALL" />
+   </component>
+   <component name="ChangeListManager">
+-    <list default="true" id="ca4a884e-17d5-4136-83e4-ef6379b33d18" name="Changes" comment="">
+-      <change afterPath="$PROJECT_DIR$/.golangci.yaml" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+-      <change beforePath="$PROJECT_DIR$/.idea/.name" beforeDir="false" />
+-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
++    <list default="true" id="b0de041a-29d0-47b6-9fff-1959c71dc9e8" name="Changes" comment="">
++      <change afterPath="$PROJECT_DIR$/internal/data/repository/jwt_repo_impl.go" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/internal/domain/entities/token_details.go" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/internal/domain/enums/token.go" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/internal/domain/repository/jwt_repo.go" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/pkg/constants/constants.go" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/app/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/app/main.go" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.go" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/delivery/handlers/product_handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/delivery/handlers/product_handler.go" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/delivery/handlers/store_handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/delivery/handlers/store_handler.go" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/delivery/handlers/user_handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/delivery/handlers/user_handler.go" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/delivery/middleware/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/delivery/middleware/auth.go" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/delivery/middleware/logger.go" beforeDir="false" afterPath="$PROJECT_DIR$/delivery/middleware/logger.go" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/delivery/wrappers/response_writer_wrapper.go" beforeDir="false" afterPath="$PROJECT_DIR$/delivery/wrappers/response_writer_wrapper.go" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/exapmle.env" beforeDir="false" afterPath="$PROJECT_DIR$/exapmle.env" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/internal/domain/usecase/product_usecase.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/domain/usecase/product_usecase/product_usecase.go" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/internal/domain/usecase/store_usecase.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/domain/usecase/store_usecase/store_usecase.go" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/internal/domain/usecase/user_usecase.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/domain/usecase/user_ucecase/user_usecase.go" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/pkg/DI/di_container.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/di/di_container.go" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/pkg/utils/auto_format_json.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/utils/auto_format_json.go" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/pkg/utils/jwt_helper.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/domain/usecase/user_ucecase/jwt_helper.go" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/internal/data/repository/user_repo_impl.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/data/repository/user_repo_impl.go" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/internal/domain/entities/tokens.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/domain/entities/tokens.go" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/internal/domain/entities/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/domain/entities/user.go" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/internal/domain/usecase/user_ucecase/jwt_helper.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/domain/usecase/user_ucecase/jwt_helper.go" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/internal/domain/usecase/user_ucecase/user_usecase.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/domain/usecase/user_ucecase/user_usecase.go" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/pkg/di/di_container.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/di/di_container.go" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/pkg/utils/validator.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/utils/validator.go" afterDir="false" />
+     </list>
+     <option name="SHOW_DIALOG" value="false" />
+@@ -35,18 +32,31 @@
+   </component>
+   <component name="GOROOT" url="file:///usr/local/go" />
+   <component name="Git.Settings">
++    <option name="RECENT_BRANCH_BY_REPOSITORY">
++      <map>
++        <entry key="$PROJECT_DIR$" value="feature/linter" />
++      </map>
++    </option>
+     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
++    <option name="RESET_MODE" value="MIXED" />
+   </component>
+-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+-  "history": [
+-    {
+-      "state": "OPEN"
+-    }
+-  ],
+-  "lastFilter": {
+-    "state": "OPEN"
+-  }
+-}]]></component>
++  <component name="GitHubPullRequestSearchHistory">{
++  &quot;lastFilter&quot;: {
++    &quot;state&quot;: &quot;OPEN&quot;,
++    &quot;assignee&quot;: &quot;nemoRevers&quot;
++  }
++}</component>
++  <component name="GitHubPullRequestState">{
++  &quot;prStates&quot;: [
++    {
++      &quot;id&quot;: {
++        &quot;id&quot;: &quot;PR_kwDOM8Pfp85_ZK5o&quot;,
++        &quot;number&quot;: 4
++      },
++      &quot;lastSeen&quot;: 1729563578642
++    }
++  ]
++}</component>
+   <component name="GithubPullRequestsUISettings">{
+   &quot;selectedUrlAndAccountId&quot;: {
+     &quot;url&quot;: &quot;https://github.com/nemoRevers/go-shop.git&quot;,
+@@ -54,46 +64,35 @@
+   }
+ }</component>
+   <component name="ProblemsViewState">
+-    <option name="selectedTabId" value="DEPENDENCY_CHECKER_PROBLEMS_TAB" />
++    <option name="selectedTabId" value="ProjectErrors" />
+   </component>
+   <component name="ProjectColorInfo">{
+   &quot;customColor&quot;: &quot;&quot;,
+   &quot;associatedIndex&quot;: 3
+ }</component>
+-  <component name="ProjectId" id="2nl8hnafbCr6Pk91KswvVxJwXhI" />
++  <component name="ProjectId" id="2nm17RSQEWz7y4bvS0L1ofeuOAI" />
+   <component name="ProjectViewState">
+     <option name="hideEmptyMiddlePackages" value="true" />
+     <option name="showLibraryContents" value="true" />
+   </component>
+   <component name="PropertiesComponent"><![CDATA[{
+   "keyToString": {
+-    "Go Build.go build marketplace.executor": "Run",
+-    "Go Build.go build marketplace/app.executor": "Run",
++    "Go Build.go build marketplace/app.executor": "Debug",
+     "RunOnceActivity.ShowReadmeOnStart": "true",
+     "RunOnceActivity.go.formatter.settings.were.checked": "true",
+     "RunOnceActivity.go.migrated.go.modules.settings": "true",
+     "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+     "com.codeium.enabled": "true",
+-    "git-widget-placeholder": "feature/linter",
++    "git-widget-placeholder": "#4 on feature/linter",
+     "go.import.settings.migrated": "true",
+     "go.sdk.automatically.set": "true",
+-    "last.edited.regexp": "Sample Text",
+     "last_opened_file_path": "/Users/alexsavko",
+     "node.js.detected.package.eslint": "true",
+     "node.js.selected.package.eslint": "(autodetect)",
+     "nodejs_package_manager_path": "npm",
+-    "run.code.analysis.last.selected.profile": "pProject Default",
+-    "settings.editor.selected.configurable": "preference.GoLinterConfigurable"
++    "run.code.analysis.last.selected.profile": "pProject Default"
+   }
+ }]]></component>
+-  <component name="RecentsManager">
+-    <key name="MoveFile.RECENT_KEYS">
+-      <recent name="$PROJECT_DIR$/internal/domain/usecase/store_usecase" />
+-      <recent name="$PROJECT_DIR$/internal/domain/usecase/product_usecase" />
+-      <recent name="$PROJECT_DIR$/internal/domain/usecase/user_ucecase" />
+-      <recent name="$PROJECT_DIR$/internal/domain/usecase/use_ucecase" />
+-    </key>
+-  </component>
+   <component name="RunManager">
+     <configuration name="go build marketplace/app" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
+       <module name="marketplace" />
+@@ -138,7 +137,7 @@
+                   <entry key="branch">
+                     <value>
+                       <list>
+-                        <option value="origin/postgreSQL" />
++                        <option value="feature/linter" />
+                       </list>
+                     </value>
+                   </entry>
+@@ -149,8 +148,28 @@
+         </entry>
+       </map>
+     </option>
++  </component>
++  <component name="VcsManagerConfiguration">
++    <MESSAGE value="something else" />
++    <option name="LAST_COMMIT_MESSAGE" value="something else" />
+   </component>
+   <component name="VgoProject">
+     <settings-migrated>true</settings-migrated>
+   </component>
++  <component name="XDebuggerManager">
++    <breakpoint-manager>
++      <breakpoints>
++        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
++          <url>file://$PROJECT_DIR$/delivery/handlers/user_handler.go</url>
++          <line>46</line>
++          <option name="timeStamp" value="3" />
++        </line-breakpoint>
++        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
++          <url>file://$PROJECT_DIR$/internal/domain/usecase/user_ucecase/user_usecase.go</url>
++          <line>42</line>
++          <option name="timeStamp" value="4" />
++        </line-breakpoint>
++      </breakpoints>
++    </breakpoint-manager>
++  </component>
+ </project>
+\ No newline at end of file
+Index: internal/data/repository/user_repo_impl.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package repository\n\nimport (\n\t\"errors\"\n\t\"marketplace/internal/domain/entities\"\n\trepository2 \"marketplace/internal/domain/repository\"\n)\n\ntype userRepositoryImpl struct {\n\t// Можно использовать базу данных здесь, например, Gorm или другое хранилище\n\tusers map[string]entities.User\n}\n\nfunc NewUserRepository() repository2.UserRepository {\n\treturn &userRepositoryImpl{\n\t\tusers: make(map[string]entities.User),\n\t}\n}\n\nfunc (r *userRepositoryImpl) Create(user entities.User) error {\n\tif _, exists := r.users[user.Email]; exists {\n\t\treturn errors.New(\"user already exists\")\n\t}\n\tr.users[user.Email] = user\n\treturn nil\n}\n\nfunc (r *userRepositoryImpl) FindByEmail(email string) (entities.User, error) {\n\tuser, exists := r.users[email]\n\tif !exists {\n\t\treturn entities.User{}, errors.New(\"user not found\")\n\t}\n\treturn user, nil\n}\n\nfunc (r *userRepositoryImpl) FindByID(id uint64) (entities.User, error) {\n\tfor _, user := range r.users {\n\t\tif user.ID == id {\n\t\t\treturn user, nil\n\t\t}\n\t}\n\treturn entities.User{}, errors.New(\"user not found\")\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/internal/data/repository/user_repo_impl.go b/internal/data/repository/user_repo_impl.go
+--- a/internal/data/repository/user_repo_impl.go	(revision 0effcea7acac9a98d85157cec6c816200f9564da)
++++ b/internal/data/repository/user_repo_impl.go	(date 1729672883984)
+@@ -6,18 +6,18 @@
+ 	repository2 "marketplace/internal/domain/repository"
+ )
+ 
+-type userRepositoryImpl struct {
++type userRepository struct {
+ 	// Можно использовать базу данных здесь, например, Gorm или другое хранилище
+ 	users map[string]entities.User
+ }
+ 
+ func NewUserRepository() repository2.UserRepository {
+-	return &userRepositoryImpl{
++	return &userRepository{
+ 		users: make(map[string]entities.User),
+ 	}
+ }
+ 
+-func (r *userRepositoryImpl) Create(user entities.User) error {
++func (r *userRepository) Create(user entities.User) error {
+ 	if _, exists := r.users[user.Email]; exists {
+ 		return errors.New("user already exists")
+ 	}
+@@ -25,7 +25,7 @@
+ 	return nil
+ }
+ 
+-func (r *userRepositoryImpl) FindByEmail(email string) (entities.User, error) {
++func (r *userRepository) FindByEmail(email string) (entities.User, error) {
+ 	user, exists := r.users[email]
+ 	if !exists {
+ 		return entities.User{}, errors.New("user not found")
+@@ -33,7 +33,7 @@
+ 	return user, nil
+ }
+ 
+-func (r *userRepositoryImpl) FindByID(id uint64) (entities.User, error) {
++func (r *userRepository) FindByID(id uint64) (entities.User, error) {
+ 	for _, user := range r.users {
+ 		if user.ID == id {
+ 			return user, nil
+Index: internal/domain/usecase/user_ucecase/jwt_helper.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package userUsecase\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"marketplace/internal/domain/entities\"\n\t\"time\"\n\n\t\"github.com/golang-jwt/jwt\"\n\t\"github.com/google/uuid\"\n\t\"github.com/sirupsen/logrus\"\n)\n\n// TokenDetails хранит данные о токенах\ntype TokenDetails struct {\n\tAccessToken  string\n\tRefreshToken string\n\tAccessUUID   string\n\tRefreshUUID  string\n\tAtExpires    int64\n\tRtExpires    int64\n}\n\nfunc (t *TokenDetails) ToTokens() *entities.Tokens {\n\treturn &entities.Tokens{RefreshToken: t.RefreshToken, AccessToken: t.AccessToken}\n}\n\n// GenerateTokens создает новые Access и Refresh токены\nfunc GenerateTokens(userID uint64, key []byte) (*TokenDetails, error) {\n\ttokenDetails := &TokenDetails{}\n\n\t// Генерация Access токена\n\ttokenDetails.AtExpires = time.Now().Add(time.Hour * 72).Unix() // Срок действия Access токена - 72 часа\n\ttokenDetails.AccessUUID = uuid.New().String()                  // Генерация нового UUID для Access токена\n\n\taccessClaims := jwt.MapClaims{\n\t\t\"user_id\":     userID,\n\t\t\"exp\":         tokenDetails.AtExpires,\n\t\t\"access_uuid\": tokenDetails.AccessUUID,\n\t}\n\n\taccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)\n\ttokenString, err := accessToken.SignedString(key)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\ttokenDetails.AccessToken = tokenString\n\n\t// Генерация Refresh токена\n\ttokenDetails.RtExpires = time.Now().Add(time.Hour * 24 * 7).Unix() // Срок действия Refresh токена - 7 дней\n\ttokenDetails.RefreshUUID = uuid.New().String()                     // Генерация нового UUID для Refresh токена\n\n\trefreshClaims := jwt.MapClaims{\n\t\t\"user_id\":      userID,\n\t\t\"exp\":          tokenDetails.RtExpires,\n\t\t\"refresh_uuid\": tokenDetails.RefreshUUID,\n\t}\n\n\trefreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)\n\trefreshTokenString, err := refreshToken.SignedString(key)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\ttokenDetails.RefreshToken = refreshTokenString\n\n\treturn tokenDetails, nil\n}\n\n// validateToken проверяет корректность и валидность токена (Access или Refresh)\nfunc validateToken(tokenString string, key []byte) (*jwt.Token, error) {\n\ttoken, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {\n\t\t// Проверка метода подписи токена (HMAC)\n\t\tif _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {\n\t\t\treturn nil, fmt.Errorf(\"unexpected signing method: %v\", token.Header[\"alg\"])\n\t\t}\n\t\treturn key, nil\n\t})\n\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tif claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {\n\t\t// Проверяем наличие user_id в токене\n\t\tuserID, ok := claims[\"user_id\"].(float64)\n\t\tif !ok {\n\t\t\treturn nil, fmt.Errorf(\"invalid token: user_id missing or invalid\")\n\t\t}\n\t\t// Проверяем наличие UUID токена\n\t\ttokenUUID, ok := claims[\"access_uuid\"].(string)\n\t\tif !ok {\n\t\t\treturn nil, fmt.Errorf(\"invalid token: UUID missing or invalid\")\n\t\t}\n\n\t\t// Проверяем время истечения токена\n\t\texp, ok := claims[\"exp\"].(float64)\n\t\tif !ok {\n\t\t\treturn nil, fmt.Errorf(\"invalid token: expiration time missing\")\n\t\t}\n\n\t\t// Текущее время в Unix формате\n\t\tcurrentTime := time.Now().Unix()\n\n\t\t// Если время истекло, возвращаем ошибку\n\t\tif int64(exp) < currentTime {\n\t\t\treturn nil, fmt.Errorf(\"token has expired\")\n\t\t}\n\n\t\t// Логируем полезные данные из токена\n\t\tlogrus.Infof(\"User ID from token: %v, Token UUID: %v\", userID, tokenUUID)\n\n\t\t// Если все проверки пройдены, возвращаем валидный токен\n\t\treturn token, nil\n\t}\n\n\treturn nil, errors.New(\"invalid token\")\n}\n\n// ValidateAccessToken проверяет корректность и валидность Access токена\nfunc ValidateAccessToken(accessTokenString string, key []byte) (*jwt.Token, error) {\n\treturn validateToken(accessTokenString, key)\n}\n\n// ValidateRefreshToken проверяет корректность и валидность Refresh токена\n//\n//goland:noinspection GoUnusedExportedFunction\nfunc ValidateRefreshToken(refreshTokenString string, key []byte) (*jwt.Token, error) {\n\treturn validateToken(refreshTokenString, key)\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/internal/domain/usecase/user_ucecase/jwt_helper.go b/internal/domain/usecase/user_ucecase/jwt_helper.go
+--- a/internal/domain/usecase/user_ucecase/jwt_helper.go	(revision 0effcea7acac9a98d85157cec6c816200f9564da)
++++ b/internal/domain/usecase/user_ucecase/jwt_helper.go	(date 1729673766413)
+@@ -4,6 +4,7 @@
+ 	"errors"
+ 	"fmt"
+ 	"marketplace/internal/domain/entities"
++	"marketplace/internal/domain/enums"
+ 	"time"
+ 
+ 	"github.com/golang-jwt/jwt"
+@@ -11,57 +12,24 @@
+ 	"github.com/sirupsen/logrus"
+ )
+ 
+-// TokenDetails хранит данные о токенах
+-type TokenDetails struct {
+-	AccessToken  string
+-	RefreshToken string
+-	AccessUUID   string
+-	RefreshUUID  string
+-	AtExpires    int64
+-	RtExpires    int64
+-}
+-
+-func (t *TokenDetails) ToTokens() *entities.Tokens {
+-	return &entities.Tokens{RefreshToken: t.RefreshToken, AccessToken: t.AccessToken}
+-}
++// GenerateToken создает новые Access и Refresh токены
++func GenerateToken(userID uint64, tokenType enums.Token, key []byte) (*entities.TokenDetails, error) {
++	tokenDetails := &entities.TokenDetails{}
++	tokenDetails.AtExpires = time.Now().Add(tokenType.Duration()).Unix()
++	tokenDetails.UUID = uuid.New().String()
+ 
+-// GenerateTokens создает новые Access и Refresh токены
+-func GenerateTokens(userID uint64, key []byte) (*TokenDetails, error) {
+-	tokenDetails := &TokenDetails{}
+-
+-	// Генерация Access токена
+-	tokenDetails.AtExpires = time.Now().Add(time.Hour * 72).Unix() // Срок действия Access токена - 72 часа
+-	tokenDetails.AccessUUID = uuid.New().String()                  // Генерация нового UUID для Access токена
+-
+-	accessClaims := jwt.MapClaims{
++	claims := jwt.MapClaims{
+ 		"user_id":     userID,
+ 		"exp":         tokenDetails.AtExpires,
+-		"access_uuid": tokenDetails.AccessUUID,
++		"access_uuid": tokenDetails.UUID,
+ 	}
+ 
+-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
+-	tokenString, err := accessToken.SignedString(key)
++	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
++	tokenString, err := token.SignedString(key)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+-	tokenDetails.AccessToken = tokenString
+-
+-	// Генерация Refresh токена
+-	tokenDetails.RtExpires = time.Now().Add(time.Hour * 24 * 7).Unix() // Срок действия Refresh токена - 7 дней
+-	tokenDetails.RefreshUUID = uuid.New().String()                     // Генерация нового UUID для Refresh токена
+-
+-	refreshClaims := jwt.MapClaims{
+-		"user_id":      userID,
+-		"exp":          tokenDetails.RtExpires,
+-		"refresh_uuid": tokenDetails.RefreshUUID,
+-	}
+-
+-	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+-	refreshTokenString, err := refreshToken.SignedString(key)
+-	if err != nil {
+-		return nil, err
+-	}
+-	tokenDetails.RefreshToken = refreshTokenString
++	tokenDetails.Token = tokenString
+ 
+ 	return tokenDetails, nil
+ }
+Index: internal/domain/entities/user.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package entities\n\ntype User struct {\n\tID       uint64   `json:\"id\"`\n\tEmail    string   `json:\"email\" validate:\"required,email\"`\n\tPassword string   `json:\"password\" validate:\"required,min=8\"`\n\tIsOwner  bool     `json:\"is_owner\"`\n\tStores   []uint64 `json:\"stores\"`\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/internal/domain/entities/user.go b/internal/domain/entities/user.go
+--- a/internal/domain/entities/user.go	(revision 0effcea7acac9a98d85157cec6c816200f9564da)
++++ b/internal/domain/entities/user.go	(date 1729672884000)
+@@ -1,9 +1,9 @@
+ package entities
+ 
+ type User struct {
+-	ID       uint64   `json:"id"`
+-	Email    string   `json:"email" validate:"required,email"`
+-	Password string   `json:"password" validate:"required,min=8"`
+-	IsOwner  bool     `json:"is_owner"`
+-	Stores   []uint64 `json:"stores"`
++	ID       uint64 `json:"id"`
++	Name     string `json:"name" validate:"required"`
++	Email    string `json:"email" validate:"required,email"`
++	Password string `json:"password" validate:"required,min=8"`
++	IsSeller bool   `json:"is_seller" validate:"required"`
+ }
+Index: go.mod
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>module marketplace\n\ngo 1.23.0\n\nrequire (\n\tgithub.com/go-playground/validator/v10 v10.22.1\n\tgithub.com/golang-jwt/jwt v3.2.2+incompatible\n\tgithub.com/google/uuid v1.6.0\n\tgithub.com/joho/godotenv v1.5.1\n\tgithub.com/labstack/echo/v4 v4.12.0\n\tgithub.com/sirupsen/logrus v1.9.3\n\tgo.uber.org/dig v1.18.0\n)\n\nrequire (\n\tgithub.com/gabriel-vasile/mimetype v1.4.3 // indirect\n\tgithub.com/go-playground/locales v0.14.1 // indirect\n\tgithub.com/go-playground/universal-translator v0.18.1 // indirect\n\tgithub.com/labstack/gommon v0.4.2 // indirect\n\tgithub.com/leodido/go-urn v1.4.0 // indirect\n\tgithub.com/mattn/go-colorable v0.1.13 // indirect\n\tgithub.com/mattn/go-isatty v0.0.20 // indirect\n\tgithub.com/stretchr/testify v1.9.0 // indirect\n\tgithub.com/valyala/bytebufferpool v1.0.0 // indirect\n\tgithub.com/valyala/fasttemplate v1.2.2 // indirect\n\tgolang.org/x/crypto v0.27.0 // indirect\n\tgolang.org/x/net v0.29.0 // indirect\n\tgolang.org/x/sys v0.25.0 // indirect\n\tgolang.org/x/text v0.18.0 // indirect\n)\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/go.mod b/go.mod
+--- a/go.mod	(revision 0effcea7acac9a98d85157cec6c816200f9564da)
++++ b/go.mod	(date 1729683019782)
+@@ -4,8 +4,11 @@
+ 
+ require (
+ 	github.com/go-playground/validator/v10 v10.22.1
++	github.com/go-redis/redis v6.15.9+incompatible
+ 	github.com/golang-jwt/jwt v3.2.2+incompatible
+ 	github.com/google/uuid v1.6.0
++	github.com/go-playground/validator/v10 v10.22.1
++	github.com/google/uuid v1.6.0
+ 	github.com/joho/godotenv v1.5.1
+ 	github.com/labstack/echo/v4 v4.12.0
+ 	github.com/sirupsen/logrus v1.9.3
+@@ -13,13 +16,18 @@
+ )
+ 
+ require (
++	github.com/cespare/xxhash/v2 v2.1.2 // indirect
++	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+ 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
+ 	github.com/go-playground/locales v0.14.1 // indirect
+ 	github.com/go-playground/universal-translator v0.18.1 // indirect
++	github.com/go-redis/redis/v8 v8.11.5 // indirect
+ 	github.com/labstack/gommon v0.4.2 // indirect
+ 	github.com/leodido/go-urn v1.4.0 // indirect
+ 	github.com/mattn/go-colorable v0.1.13 // indirect
+ 	github.com/mattn/go-isatty v0.0.20 // indirect
++	github.com/onsi/ginkgo v1.16.5 // indirect
++	github.com/onsi/gomega v1.34.2 // indirect
+ 	github.com/stretchr/testify v1.9.0 // indirect
+ 	github.com/valyala/bytebufferpool v1.0.0 // indirect
+ 	github.com/valyala/fasttemplate v1.2.2 // indirect
+Index: go.sum
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=\ngithub.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=\ngithub.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=\ngithub.com/gabriel-vasile/mimetype v1.4.3 h1:in2uUcidCuFcDKtdcBxlR0rJ1+fsokWf+uqxgUFjbI0=\ngithub.com/gabriel-vasile/mimetype v1.4.3/go.mod h1:d8uq/6HKRL6CGdk+aubisF/M5GcPfT7nKyLpA0lbSSk=\ngithub.com/go-playground/assert/v2 v2.2.0 h1:JvknZsQTYeFEAhQwI4qEt9cyV5ONwRHC+lYKSsYSR8s=\ngithub.com/go-playground/assert/v2 v2.2.0/go.mod h1:VDjEfimB/XKnb+ZQfWdccd7VUvScMdVu0Titje2rxJ4=\ngithub.com/go-playground/locales v0.14.1 h1:EWaQ/wswjilfKLTECiXz7Rh+3BjFhfDFKv/oXslEjJA=\ngithub.com/go-playground/locales v0.14.1/go.mod h1:hxrqLVvrK65+Rwrd5Fc6F2O76J/NuW9t0sjnWqG1slY=\ngithub.com/go-playground/universal-translator v0.18.1 h1:Bcnm0ZwsGyWbCzImXv+pAJnYK9S473LQFuzCbDbfSFY=\ngithub.com/go-playground/universal-translator v0.18.1/go.mod h1:xekY+UJKNuX9WP91TpwSH2VMlDf28Uj24BCp08ZFTUY=\ngithub.com/go-playground/validator/v10 v10.22.1 h1:40JcKH+bBNGFczGuoBYgX4I6m/i27HYW8P9FDk5PbgA=\ngithub.com/go-playground/validator/v10 v10.22.1/go.mod h1:dbuPbCMFw/DrkbEynArYaCwl3amGuJotoKCe95atGMM=\ngithub.com/golang-jwt/jwt v3.2.2+incompatible h1:IfV12K8xAKAnZqdXVzCZ+TOjboZ2keLg81eXfW3O+oY=\ngithub.com/golang-jwt/jwt v3.2.2+incompatible/go.mod h1:8pz2t5EyA70fFQQSrl6XZXzqecmYZeUEB8OUGHkxJ+I=\ngithub.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=\ngithub.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=\ngithub.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=\ngithub.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=\ngithub.com/labstack/echo/v4 v4.12.0 h1:IKpw49IMryVB2p1a4dzwlhP1O2Tf2E0Ir/450lH+kI0=\ngithub.com/labstack/echo/v4 v4.12.0/go.mod h1:UP9Cr2DJXbOK3Kr9ONYzNowSh7HP0aG0ShAyycHSJvM=\ngithub.com/labstack/gommon v0.4.2 h1:F8qTUNXgG1+6WQmqoUWnz8WiEU60mXVVw0P4ht1WRA0=\ngithub.com/labstack/gommon v0.4.2/go.mod h1:QlUFxVM+SNXhDL/Z7YhocGIBYOiwB0mXm1+1bAPHPyU=\ngithub.com/leodido/go-urn v1.4.0 h1:WT9HwE9SGECu3lg4d/dIA+jxlljEa1/ffXKmRjqdmIQ=\ngithub.com/leodido/go-urn v1.4.0/go.mod h1:bvxc+MVxLKB4z00jd1z+Dvzr47oO32F/QSNjSBOlFxI=\ngithub.com/mattn/go-colorable v0.1.13 h1:fFA4WZxdEF4tXPZVKMLwD8oUnCTTo08duU7wxecdEvA=\ngithub.com/mattn/go-colorable v0.1.13/go.mod h1:7S9/ev0klgBDR4GtXTXX8a3vIGJpMovkB8vQcUbaXHg=\ngithub.com/mattn/go-isatty v0.0.16/go.mod h1:kYGgaQfpe5nmfYZH+SKPsOc2e4SrIfOl2e/yFXSvRLM=\ngithub.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=\ngithub.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=\ngithub.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=\ngithub.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=\ngithub.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=\ngithub.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=\ngithub.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=\ngithub.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=\ngithub.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=\ngithub.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=\ngithub.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=\ngithub.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=\ngithub.com/valyala/fasttemplate v1.2.2 h1:lxLXG0uE3Qnshl9QyaK6XJxMXlQZELvChBOCmQD0Loo=\ngithub.com/valyala/fasttemplate v1.2.2/go.mod h1:KHLXt3tVN2HBp8eijSv/kGJopbvo7S+qRAEEKiv+SiQ=\ngo.uber.org/dig v1.18.0 h1:imUL1UiY0Mg4bqbFfsRQO5G4CGRBec/ZujWTvSVp3pw=\ngo.uber.org/dig v1.18.0/go.mod h1:Us0rSJiThwCv2GteUN0Q7OKvU7n5J4dxZ9JKUXozFdE=\ngolang.org/x/crypto v0.27.0 h1:GXm2NjJrPaiv/h1tb2UH8QfgC/hOf/+z0p6PT8o1w7A=\ngolang.org/x/crypto v0.27.0/go.mod h1:1Xngt8kV6Dvbssa53Ziq6Eqn0HqbZi5Z6R0ZpwQzt70=\ngolang.org/x/net v0.29.0 h1:5ORfpBpCs4HzDYoodCDBbwHzdR5UrLBZ3sOnUJmFoHo=\ngolang.org/x/net v0.29.0/go.mod h1:gLkgy8jTGERgjzMic6DS9+SP0ajcu6Xu3Orq/SpETg0=\ngolang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=\ngolang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=\ngolang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=\ngolang.org/x/sys v0.25.0 h1:r+8e+loiHxRqhXVl6ML1nO3l1+oFoWbnlu2Ehimmi34=\ngolang.org/x/sys v0.25.0/go.mod h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=\ngolang.org/x/text v0.18.0 h1:XvMDiNzPAl0jr17s6W9lcaIhGUfUORdGCNsuLmPG224=\ngolang.org/x/text v0.18.0/go.mod h1:BuEKDfySbSR4drPmRPG/7iBdf8hvFMuRexcpahXilzY=\ngopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=\ngopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=\ngopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=\ngopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/go.sum b/go.sum
+--- a/go.sum	(revision 0effcea7acac9a98d85157cec6c816200f9564da)
++++ b/go.sum	(date 1729673795050)
+@@ -1,6 +1,12 @@
++github.com/cespare/xxhash/v2 v2.1.2 h1:YRXhKfTDauu4ajMg1TPgFO5jnlC2HCbmLXMcTG5cbYE=
++github.com/cespare/xxhash/v2 v2.1.2/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
+ github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
+ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
++github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f h1:lO4WD4F/rVNCu3HqELle0jiPLLBs70cWOduZpkS1E78=
++github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f/go.mod h1:cuUVRXasLTGF7a8hSLbxyZXjz+1KgoB3wDUb6vlszIc=
++github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
++github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
+ github.com/gabriel-vasile/mimetype v1.4.3 h1:in2uUcidCuFcDKtdcBxlR0rJ1+fsokWf+uqxgUFjbI0=
+ github.com/gabriel-vasile/mimetype v1.4.3/go.mod h1:d8uq/6HKRL6CGdk+aubisF/M5GcPfT7nKyLpA0lbSSk=
+ github.com/go-playground/assert/v2 v2.2.0 h1:JvknZsQTYeFEAhQwI4qEt9cyV5ONwRHC+lYKSsYSR8s=
+@@ -11,10 +17,28 @@
+ github.com/go-playground/universal-translator v0.18.1/go.mod h1:xekY+UJKNuX9WP91TpwSH2VMlDf28Uj24BCp08ZFTUY=
+ github.com/go-playground/validator/v10 v10.22.1 h1:40JcKH+bBNGFczGuoBYgX4I6m/i27HYW8P9FDk5PbgA=
+ github.com/go-playground/validator/v10 v10.22.1/go.mod h1:dbuPbCMFw/DrkbEynArYaCwl3amGuJotoKCe95atGMM=
++github.com/go-redis/redis v6.15.9+incompatible h1:K0pv1D7EQUjfyoMql+r/jZqCLizCGKFlFgcHWWmHQjg=
++github.com/go-redis/redis v6.15.9+incompatible/go.mod h1:NAIEuMOZ/fxfXJIrKDQDz8wamY7mA7PouImQ2Jvg6kA=
++github.com/go-redis/redis/v8 v8.11.5 h1:AcZZR7igkdvfVmQTPnu9WE37LRrO/YrBH5zWyjDC0oI=
++github.com/go-redis/redis/v8 v8.11.5/go.mod h1:gREzHqY1hg6oD9ngVRbLStwAWKhA0FEgq8Jd4h5lpwo=
++github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0/go.mod h1:fyg7847qk6SyHyPtNmDHnmrv/HOrqktSC+C9fM+CJOE=
+ github.com/golang-jwt/jwt v3.2.2+incompatible h1:IfV12K8xAKAnZqdXVzCZ+TOjboZ2keLg81eXfW3O+oY=
+ github.com/golang-jwt/jwt v3.2.2+incompatible/go.mod h1:8pz2t5EyA70fFQQSrl6XZXzqecmYZeUEB8OUGHkxJ+I=
++github.com/golang-jwt/jwt/v4 v4.5.0 h1:7cYmW1XlMY7h7ii7UhUyChSgS5wUJEnm9uZVTGqOWzg=
++github.com/golang-jwt/jwt/v4 v4.5.0/go.mod h1:m21LjoU+eqJr34lmDMbreY2eSTRJ1cv77w39/MY0Ch0=
++github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
++github.com/golang/protobuf v1.4.0-rc.1/go.mod h1:ceaxUfeHdC40wWswd/P6IGgMaK3YpKi5j83Wpe3EHw8=
++github.com/golang/protobuf v1.4.0-rc.1.0.20200221234624-67d41d38c208/go.mod h1:xKAWHe0F5eneWXFV3EuXVDTCmh+JuBKY0li0aMyXATA=
++github.com/golang/protobuf v1.4.0-rc.2/go.mod h1:LlEzMj4AhA7rCAGe4KMBDvJI+AwstrUpVNzEA03Pprs=
++github.com/golang/protobuf v1.4.0-rc.4.0.20200313231945-b860323f09d0/go.mod h1:WU3c8KckQ9AFe+yFwt9sWVRKCVIyN9cPHBJSNnbL67w=
++github.com/golang/protobuf v1.4.0/go.mod h1:jodUvKwWbYaEsadDk5Fwe5c77LiNKVO9IDvqG2KuDX0=
++github.com/golang/protobuf v1.4.2/go.mod h1:oDoupMAO8OvCJWAcko0GGGIgR6R6ocIYbsSw735rRwI=
++github.com/google/go-cmp v0.3.0/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
++github.com/google/go-cmp v0.3.1/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
++github.com/google/go-cmp v0.4.0/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
+ github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+ github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
++github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
+ github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
+ github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
+ github.com/labstack/echo/v4 v4.12.0 h1:IKpw49IMryVB2p1a4dzwlhP1O2Tf2E0Ir/450lH+kI0=
+@@ -28,11 +52,20 @@
+ github.com/mattn/go-isatty v0.0.16/go.mod h1:kYGgaQfpe5nmfYZH+SKPsOc2e4SrIfOl2e/yFXSvRLM=
+ github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
+ github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
++github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
++github.com/nxadm/tail v1.4.8/go.mod h1:+ncqLTQzXmGhMZNUePPaPqPvBxHAIsmXswZKocGu+AU=
++github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
++github.com/onsi/ginkgo v1.12.1/go.mod h1:zj2OWP4+oCPe1qIXoGWkgMRwljMUYCdkwsT2108oapk=
++github.com/onsi/ginkgo v1.16.5/go.mod h1:+E8gABHa3K6zRBolWtd+ROzc/U5bkGt0FwiG042wbpU=
++github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=
++github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1ybHNo=
++github.com/onsi/gomega v1.34.2/go.mod h1:v1xfxRgk0KIsG+QOdm7p8UosrOzPYRo60fd3B/1Dukc=
+ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
+ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+ github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
+ github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
+ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
++github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
+ github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
+ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
+ github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
+@@ -40,20 +73,62 @@
+ github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
+ github.com/valyala/fasttemplate v1.2.2 h1:lxLXG0uE3Qnshl9QyaK6XJxMXlQZELvChBOCmQD0Loo=
+ github.com/valyala/fasttemplate v1.2.2/go.mod h1:KHLXt3tVN2HBp8eijSv/kGJopbvo7S+qRAEEKiv+SiQ=
++github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
+ go.uber.org/dig v1.18.0 h1:imUL1UiY0Mg4bqbFfsRQO5G4CGRBec/ZujWTvSVp3pw=
+ go.uber.org/dig v1.18.0/go.mod h1:Us0rSJiThwCv2GteUN0Q7OKvU7n5J4dxZ9JKUXozFdE=
++golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
++golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
++golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
+ golang.org/x/crypto v0.27.0 h1:GXm2NjJrPaiv/h1tb2UH8QfgC/hOf/+z0p6PT8o1w7A=
+ golang.org/x/crypto v0.27.0/go.mod h1:1Xngt8kV6Dvbssa53Ziq6Eqn0HqbZi5Z6R0ZpwQzt70=
++golang.org/x/mod v0.3.0/go.mod h1:s0Qsj1ACt9ePp/hMypM3fl4fZqREWJwdYDEqhRiZZUA=
++golang.org/x/net v0.0.0-20180906233101-161cd47e91fd/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
++golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3/go.mod h1:t9HGtf8HONx5eT2rtn7q6eTqICYqUVnKs3thJo3Qplg=
++golang.org/x/net v0.0.0-20190620200207-3b0461eec859/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
++golang.org/x/net v0.0.0-20200520004742-59133d7f0dd7/go.mod h1:qpuaurCH72eLCgpAm/N6yyVIVM9cpaDIP3A8BGJEC5A=
++golang.org/x/net v0.0.0-20201021035429-f5854403a974/go.mod h1:sp8m0HH+o8qH0wwXwYZr8TS3Oi6o0r6Gce1SSxlDquU=
+ golang.org/x/net v0.29.0 h1:5ORfpBpCs4HzDYoodCDBbwHzdR5UrLBZ3sOnUJmFoHo=
+ golang.org/x/net v0.29.0/go.mod h1:gLkgy8jTGERgjzMic6DS9+SP0ajcu6Xu3Orq/SpETg0=
++golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
++golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
++golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
++golang.org/x/sys v0.0.0-20180909124046-d0be0721c37e/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
++golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
++golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
++golang.org/x/sys v0.0.0-20190904154756-749cb33beabd/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
++golang.org/x/sys v0.0.0-20191005200804-aed5e4c7ecf9/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
++golang.org/x/sys v0.0.0-20191120155948-bd437916bb0e/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
++golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
++golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
++golang.org/x/sys v0.0.0-20210112080510-489259a85091/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+ golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+ golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+ golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+ golang.org/x/sys v0.25.0 h1:r+8e+loiHxRqhXVl6ML1nO3l1+oFoWbnlu2Ehimmi34=
+ golang.org/x/sys v0.25.0/go.mod h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=
++golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
++golang.org/x/text v0.3.3/go.mod h1:5Zoc/QRtKVWzQhOtBMvqHzDpF6irO9z98xDceosuGiQ=
+ golang.org/x/text v0.18.0 h1:XvMDiNzPAl0jr17s6W9lcaIhGUfUORdGCNsuLmPG224=
+ golang.org/x/text v0.18.0/go.mod h1:BuEKDfySbSR4drPmRPG/7iBdf8hvFMuRexcpahXilzY=
++golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=
++golang.org/x/tools v0.0.0-20191119224855-298f0cb1881e/go.mod h1:b+2E5dAYhXwXZwtnZ6UAqBI28+e2cm9otk0dWdXHAEo=
++golang.org/x/tools v0.0.0-20201224043029-2b0845dc783e/go.mod h1:emZCQorbCU4vsT4fOWvOPXz4eW1wZW4PmDk9uLelYpA=
++golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
++golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
++golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
++golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
++google.golang.org/protobuf v0.0.0-20200109180630-ec00e32a8dfd/go.mod h1:DFci5gLYBciE7Vtevhsrf46CRTquxDuWsQurQQe4oz8=
++google.golang.org/protobuf v0.0.0-20200221191635-4d8936d0db64/go.mod h1:kwYJMbMJ01Woi6D6+Kah6886xMZcty6N08ah7+eCXa0=
++google.golang.org/protobuf v0.0.0-20200228230310-ab0ca4ff8a60/go.mod h1:cfTl7dwQJ+fmap5saPgwCLgHXTUD7jkjRqWcaiX5VyM=
++google.golang.org/protobuf v1.20.1-0.20200309200217-e05f789c0967/go.mod h1:A+miEFZTKqfCUM6K7xSMQL9OKL/b6hQv+e19PK+JZNE=
++google.golang.org/protobuf v1.21.0/go.mod h1:47Nbq4nVaFHyn7ilMalzfO3qCViNmqZ2kzikPIcrTAo=
++google.golang.org/protobuf v1.23.0/go.mod h1:EGpADcykh3NcUnDUJcl1+ZksZNG86OlYog2l/sGQquU=
+ gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
++gopkg.in/fsnotify.v1 v1.4.7/go.mod h1:Tz8NjZHkW78fSQdbUxIjBTcgA1z1m8ZHf0WmKUhAMys=
++gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7/go.mod h1:dt/ZhP58zS4L8KSrWDmTeBkI65Dw0HsyUHuEVlX15mw=
++gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
++gopkg.in/yaml.v2 v2.2.4/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
++gopkg.in/yaml.v2 v2.3.0/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
+ gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
+ gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
+ gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
+Index: exapmle.env
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>APP_ENV=dev
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/exapmle.env b/exapmle.env
+--- a/exapmle.env	(revision 0effcea7acac9a98d85157cec6c816200f9564da)
++++ b/exapmle.env	(date 1729672884050)
+@@ -1,1 +1,2 @@
+-APP_ENV=dev
+\ No newline at end of file
++APP_ENV=Dev
++JWT_SECRET_KEY=your-secret-key
+\ No newline at end of file
