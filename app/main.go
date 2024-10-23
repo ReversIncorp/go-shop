@@ -11,7 +11,7 @@ import (
 func main() {
 	// Load .env file
 	var err error
-	err = godotenv.Load("../.env")
+	err = godotenv.Load(".env")
 	if err != nil {
 		err := fmt.Sprintf("Error loading .env file.\n%s", err)
 		panic(err)
@@ -19,6 +19,10 @@ func main() {
 	container := di.Container()
 	e := echo.New()
 
+	if err := di.RegisterDatabases(container); err != nil {
+		fmt.Printf("Failed to register databases: %v\n", err)
+		return
+	}
 	// Регистрация всех зависимостей
 	err = di.RegisterDependencies(container)
 	if err != nil {

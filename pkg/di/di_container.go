@@ -11,6 +11,7 @@ import (
 	"marketplace/pkg/utils"
 	"os"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 )
@@ -19,6 +20,28 @@ var container = dig.New()
 
 func Container() *dig.Container {
 	return container
+}
+
+func RegisterDatabases(container *dig.Container) error {
+	if err := container.Provide(registerRedisClient); err != nil {
+		return err
+	}
+	return nil
+}
+
+func registerRedisClient() (*redis.Client, error) {
+	redisClient := redis.NewClient(
+		&redis.Options{
+			Addr:     os.Getenv("REDIS_ADDR"),
+			Password: "",
+			DB:       0,
+		},
+	)
+	pong, err := redisClient.Ping(redisClient.Context()).Result()
+	if pong != "PONG" || err != nil {
+		return nil, fmt.Errorf("failed to connect to Redis: %v", err)
+	}
+	return redisClient, nil
 }
 
 func RegisterDependencies(container *dig.Container) error {
@@ -37,6 +60,9 @@ func RegisterDependencies(container *dig.Container) error {
 		return err
 	}
 	if err := container.Provide(repository.NewStoreRepository); err != nil {
+		return err
+	}
+	if err := container.Provide(repository.NewRedisJWTRepository); err != nil {
 		return err
 	}
 
