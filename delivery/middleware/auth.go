@@ -1,14 +1,16 @@
 package middleware
 
 import (
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/labstack/echo/v4"
-	"marketplace/pkg/utils"
+	userUsecase "marketplace/internal/domain/usecase/user_ucecase"
+
 	"net/http"
 	"strings"
+
+	"github.com/golang-jwt/jwt"
+	"github.com/labstack/echo/v4"
 )
 
-// JWTMiddleware обрабатывает аутентификацию JWT токенов
+// JWTMiddleware обрабатывает аутентификацию JWT токенов.
 func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Извлекаем токен из заголовков Authorization
@@ -16,7 +18,6 @@ func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		if authHeader == "" {
 			return c.JSON(http.StatusUnauthorized, echo.Map{"error": "Missing token"})
 		}
-
 		// Проверяем формат токена (Bearer)
 		tokenParts := strings.Split(authHeader, " ")
 		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
@@ -27,7 +28,7 @@ func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		tokenString := tokenParts[1]
 
 		// Проверяем валидность Access токена
-		token, err := utils.ValidateAccessToken(tokenString)
+		token, err := userUsecase.ValidateAccessToken(tokenString)
 		if err != nil {
 			return c.JSON(http.StatusUnauthorized, echo.Map{"error": "Invalid or expired token"})
 		}
@@ -38,11 +39,10 @@ func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return c.JSON(http.StatusUnauthorized, echo.Map{"error": "Invalid token claims"})
 		}
 
-		// Устанавливаем user_id в контекст для последующего использования в контроллерах
+		// Устанавливаем user_id в контекст для последующего использования в контроллерах.
 		userID := claims["user_id"]
 		c.Set("user_id", userID)
-
-		// Переходим к следующему обработчику
+		// Переходим к следующему обработчику.
 		return next(c)
 	}
 }

@@ -2,13 +2,14 @@ package middleware
 
 import (
 	"bytes"
-	"github.com/labstack/echo/v4"
-	"github.com/sirupsen/logrus"
 	"io"
 	"marketplace/delivery/wrappers"
 	"marketplace/pkg/utils"
 	"sync"
 	"time"
+
+	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 )
 
 var appLoggers *AppLoggers
@@ -22,11 +23,11 @@ type AppLoggers struct {
 func AppLoggersSingleton() *AppLoggers {
 	if appLoggers == nil {
 		once.Do(func() {
-			//Request
+			// Request
 			requestLogger := logrus.New()
 			requestLogger.Level = logrus.DebugLevel
 			requestLogger.WithTime(time.Now())
-			//Response
+			// Response
 			responseLogger := logrus.New()
 			responseLogger.Level = logrus.DebugLevel
 			responseLogger.WithTime(time.Now())
@@ -47,14 +48,14 @@ func (l *AppLoggers) LoggingRequestMiddleware(next echo.HandlerFunc) echo.Handle
 			return err
 		}
 		req.Body = io.NopCloser(bytes.NewBuffer(body)) // Reset the request body
-		//Formating JSON
+		// Formating JSON
 		formattedBody, err := utils.AutoFormatJSON(body)
 		if err != nil {
 			l.requestLogger.Errorf("Error formating request body: %v", err)
 			return err
 		}
 		formattedHeaders, err := utils.AutoFormatJSON(req.Header)
-		//Formating JSON
+		// Formating JSON
 		if err != nil {
 			l.requestLogger.Errorf("Error formating request body: %v", err)
 			return err
@@ -81,7 +82,7 @@ func (l *AppLoggers) LoggingResponseMiddleware(next echo.HandlerFunc) echo.Handl
 
 		// Логируем после обработки ответа
 		response.After(func() {
-			l.responseLogger.Infof(responseWrapper.String())
+			l.responseLogger.Infof("%s", responseWrapper.String())
 		})
 		// Выполняем следующий обработчик
 		err := next(c)

@@ -1,22 +1,23 @@
 package handlers
 
 import (
-	"github.com/go-playground/validator/v10"
-	"github.com/labstack/echo/v4"
 	"marketplace/internal/domain/entities"
-	"marketplace/internal/domain/usecase"
+	userUsecase "marketplace/internal/domain/usecase/user_ucecase"
 	"net/http"
 	"strconv"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/labstack/echo/v4"
 )
 
 // UserHandler обрабатывает HTTP-запросы для пользователей
 type UserHandler struct {
-	userUseCase *usecase.UserUseCase
+	userUseCase *userUsecase.UserUseCase
 	validator   *validator.Validate
 }
 
 // NewUserHandler создает новый экземпляр UserHandler
-func NewUserHandler(userUseCase *usecase.UserUseCase, validate *validator.Validate) *UserHandler {
+func NewUserHandler(userUseCase *userUsecase.UserUseCase, validate *validator.Validate) *UserHandler {
 	return &UserHandler{userUseCase: userUseCase, validator: validate}
 }
 
