@@ -8,7 +8,6 @@
 *.pssln
 .DS_Store
 # Ignore IntelliJ project-specific files
-.idea/
 *.iml
 *.iws
 .idea/workspace.xml
@@ -23,13 +22,11 @@
 # Ignore JetBrains Shelf (Uncommitted Changes)
 shelf/
 # Ignore VS Code settings
-.vscode/
 .history/
 # Logs
 *.log
 
 # OS generated files
-.DS_Store
 Thumbs.db
 
 # Temporary files
