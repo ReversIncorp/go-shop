@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"marketplace/internal/domain/entities"
-	userusecase "marketplace/internal/domain/usecase/user_ucecase"
+	userUsecase "marketplace/internal/domain/usecase/user_ucecase"
 	"net/http"
 	"strconv"
 
@@ -12,12 +12,12 @@ import (
 
 // UserHandler обрабатывает HTTP-запросы для пользователей
 type UserHandler struct {
-	userUseCase *userusecase.UserUseCase
+	userUseCase *userUsecase.UserUseCase
 	validator   *validator.Validate
 }
 
 // NewUserHandler создает новый экземпляр UserHandler
-func NewUserHandler(userUseCase *userusecase.UserUseCase, validate *validator.Validate) *UserHandler {
+func NewUserHandler(userUseCase *userUsecase.UserUseCase, validate *validator.Validate) *UserHandler {
 	return &UserHandler{userUseCase: userUseCase, validator: validate}
 }
 
