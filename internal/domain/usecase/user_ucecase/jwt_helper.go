@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"marketplace/internal/domain/entities"
+	"marketplace/internal/domain/enums"
 	"time"
 
 	"github.com/golang-jwt/jwt"

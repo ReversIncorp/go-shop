@@ -88,5 +88,5 @@ func (u *UserUseCase) createTokens(userId uint64, ctx echo.Context) (*entities.T
 		return nil, err
 	}
 
-	return &entities.Tokens{RefreshToken: refreshToken.Token, AccessToken: accessToken.Token}, nil
+	return &entities.Tokens{RefreshToken: refreshToken, AccessToken: accessToken}, nil
 }
