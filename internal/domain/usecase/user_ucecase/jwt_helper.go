@@ -1,79 +1,51 @@
-package userUsecase
+package usecase
 
 import (
-	"errors"
 	"fmt"
 	"marketplace/internal/domain/entities"
+	"marketplace/internal/domain/enums"
+	"os"
 	"time"
 
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
-// TokenDetails хранит данные о токенах
-type TokenDetails struct {
-	AccessToken  string
-	RefreshToken string
-	AccessUUID   string
-	RefreshUUID  string
-	AtExpires    int64
-	RtExpires    int64
-}
+var jwtSecret = []byte(os.Getenv("JWT_SECRET_KEY"))
 
-func (t *TokenDetails) ToTokens() *entities.Tokens {
-	return &entities.Tokens{RefreshToken: t.RefreshToken, AccessToken: t.AccessToken}
-}
-
-// GenerateTokens создает новые Access и Refresh токены
-func GenerateTokens(userID uint64, key []byte) (*TokenDetails, error) {
-	tokenDetails := &TokenDetails{}
+// GenerateToken создает новые Access и Refresh токены
+func GenerateToken(userID uint64, tokenType enums.Token) (*entities.TokenDetails, error) {
+	tokenDetails := &entities.TokenDetails{}
 
 	// Генерация Access токена
-	tokenDetails.AtExpires = time.Now().Add(time.Hour * 72).Unix() // Срок действия Access токена - 72 часа
-	tokenDetails.AccessUUID = uuid.New().String()                  // Генерация нового UUID для Access токена
+	tokenDetails.AtExpires = time.Now().Add(tokenType.Duration()).Unix() // Срок действия Access токена - 72 часа
+	tokenDetails.UUID = uuid.New().String()                              // Генерация нового UUID для Access токена
 
 	accessClaims := jwt.MapClaims{
 		"user_id":     userID,
 		"exp":         tokenDetails.AtExpires,
-		"access_uuid": tokenDetails.AccessUUID,
+		"access_uuid": tokenDetails.UUID,
 	}
 
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
-	tokenString, err := accessToken.SignedString(key)
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
+	tokenString, err := claims.SignedString(jwtSecret)
 	if err != nil {
 		return nil, err
 	}
-	tokenDetails.AccessToken = tokenString
-
-	// Генерация Refresh токена
-	tokenDetails.RtExpires = time.Now().Add(time.Hour * 24 * 7).Unix() // Срок действия Refresh токена - 7 дней
-	tokenDetails.RefreshUUID = uuid.New().String()                     // Генерация нового UUID для Refresh токена
-
-	refreshClaims := jwt.MapClaims{
-		"user_id":      userID,
-		"exp":          tokenDetails.RtExpires,
-		"refresh_uuid": tokenDetails.RefreshUUID,
-	}
-
-	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	refreshTokenString, err := refreshToken.SignedString(key)
-	if err != nil {
-		return nil, err
-	}
-	tokenDetails.RefreshToken = refreshTokenString
+	tokenDetails.Token = tokenString
 
 	return tokenDetails, nil
 }
 
-// validateToken проверяет корректность и валидность токена (Access или Refresh)
-func validateToken(tokenString string, key []byte) (*jwt.Token, error) {
+// ValidateToken проверяет корректность и валидность токена (Access или Refresh)
+func ValidateToken(tokenString string) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Проверка метода подписи токена (HMAC)
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return key, nil
+		return jwtSecret, nil
 	})
 
 	if err != nil {
@@ -86,6 +58,9 @@ func validateToken(tokenString string, key []byte) (*jwt.Token, error) {
 		if !ok {
 			return nil, fmt.Errorf("invalid token: user_id missing or invalid")
 		}
+
+		//TODO: Добавить проверку токена на наличие в БД, типо redis для управления сессиями
+
 		// Проверяем наличие UUID токена
 		tokenUUID, ok := claims["access_uuid"].(string)
 		if !ok {
@@ -113,17 +88,15 @@ func validateToken(tokenString string, key []byte) (*jwt.Token, error) {
 		return token, nil
 	}
 
-	return nil, errors.New("invalid token")
+	return nil, fmt.Errorf("invalid token")
 }
 
 // ValidateAccessToken проверяет корректность и валидность Access токена
-func ValidateAccessToken(accessTokenString string, key []byte) (*jwt.Token, error) {
-	return validateToken(accessTokenString, key)
+func ValidateAccessToken(accessTokenString string) (*jwt.Token, error) {
+	return ValidateToken(accessTokenString)
 }
 
 // ValidateRefreshToken проверяет корректность и валидность Refresh токена
-//
-//goland:noinspection GoUnusedExportedFunction
-func ValidateRefreshToken(refreshTokenString string, key []byte) (*jwt.Token, error) {
-	return validateToken(refreshTokenString, key)
+func ValidateRefreshToken(refreshTokenString string) (*jwt.Token, error) {
+	return ValidateToken(refreshTokenString)
 }

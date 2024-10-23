@@ -4,29 +4,27 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ca4a884e-17d5-4136-83e4-ef6379b33d18" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.golangci.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.name" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+    <list default="true" id="ca4a884e-17d5-4136-83e4-ef6379b33d18" name="Changes" comment="updated with dev">
+      <change afterPath="$PROJECT_DIR$/internal/data/repository/jwt_repo_impl.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/domain/entities/token_details.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/domain/enums/token.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/internal/domain/repository/jwt_repo.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pkg/constants/constants.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/marketplace.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/marketplace.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/app/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/delivery/handlers/product_handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/delivery/handlers/product_handler.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/delivery/handlers/store_handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/delivery/handlers/store_handler.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/delivery/handlers/user_handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/delivery/handlers/user_handler.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/delivery/middleware/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/delivery/middleware/auth.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/delivery/middleware/logger.go" beforeDir="false" afterPath="$PROJECT_DIR$/delivery/middleware/logger.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/delivery/wrappers/response_writer_wrapper.go" beforeDir="false" afterPath="$PROJECT_DIR$/delivery/wrappers/response_writer_wrapper.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/exapmle.env" beforeDir="false" afterPath="$PROJECT_DIR$/exapmle.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/domain/usecase/product_usecase.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/domain/usecase/product_usecase/product_usecase.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/domain/usecase/store_usecase.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/domain/usecase/store_usecase/store_usecase.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/domain/usecase/user_usecase.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/domain/usecase/user_ucecase/user_usecase.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/DI/di_container.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/di/di_container.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/utils/auto_format_json.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/utils/auto_format_json.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/utils/jwt_helper.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/domain/usecase/user_ucecase/jwt_helper.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/utils/validator.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/utils/validator.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/data/repository/user_repo_impl.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/data/repository/user_repo_impl.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/domain/entities/tokens.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/domain/entities/tokens.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/domain/entities/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/domain/entities/user.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/domain/usecase/user_ucecase/jwt_helper.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/domain/usecase/user_ucecase/jwt_helper.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/domain/usecase/user_ucecase/user_usecase.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/domain/usecase/user_ucecase/user_usecase.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/di/di_container.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/di/di_container.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -37,15 +35,26 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "history": [
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;history&quot;: [
     {
-      "state": "OPEN"
+      &quot;state&quot;: &quot;OPEN&quot;
     }
   ],
-  "lastFilter": {
-    "state": "OPEN"
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;
   }
+}</component>
+  <component name="GitHubPullRequestState"><![CDATA[{
+  "prStates": [
+    {
+      "id": {
+        "id": "PR_kwDOM8Pfp85_ZK5o",
+        "number": 4
+      },
+      "lastSeen": 1729686574600
+    }
+  ]
 }]]></component>
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
@@ -74,7 +83,7 @@
     "RunOnceActivity.go.migrated.go.modules.settings": "true",
     "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
     "com.codeium.enabled": "true",
-    "git-widget-placeholder": "feature/linter",
+    "git-widget-placeholder": "#4 on Merging feature/linter",
     "go.import.settings.migrated": "true",
     "go.sdk.automatically.set": "true",
     "last.edited.regexp": "Sample Text",
@@ -97,7 +106,7 @@
   <component name="RunManager">
     <configuration name="go build marketplace/app" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
       <module name="marketplace" />
-      <working_directory value="$PROJECT_DIR$" />
+      <working_directory value="$PROJECT_DIR$/app" />
       <EXTENSION ID="net.ashald.envfile">
         <option name="IS_ENABLED" value="false" />
         <option name="IS_SUBST" value="false" />
@@ -149,6 +158,10 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="updated with dev" />
+    <option name="LAST_COMMIT_MESSAGE" value="updated with dev" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>

@@ -1,23 +1,25 @@
-package userUsecase
+package usecase
 
 import (
 	"errors"
-	"marketplace/config"
+	"github.com/labstack/echo/v4"
 	"marketplace/internal/domain/entities"
+	"marketplace/internal/domain/enums"
 	"marketplace/internal/domain/repository"
 )
 
 type UserUseCase struct {
-	userRepo repository.UserRepository
+	userRepo  repository.UserRepository
+	tokenRepo repository.JWTRepository
 }
 
 // NewUserUseCase Конструктор для создания новой UserUseCase
-func NewUserUseCase(userRepo repository.UserRepository) *UserUseCase {
-	return &UserUseCase{userRepo: userRepo}
+func NewUserUseCase(userRepo repository.UserRepository, tokenRepo repository.JWTRepository) *UserUseCase {
+	return &UserUseCase{userRepo: userRepo, tokenRepo: tokenRepo}
 }
 
 // Register Реализация метода Register
-func (u *UserUseCase) Register(user entities.User) (*entities.Tokens, error) {
+func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.Tokens, error) {
 	existingUser, err := u.userRepo.FindByEmail(user.Email)
 	if err == nil && existingUser.ID != 0 {
 		return nil, errors.New("user already exists")
@@ -27,33 +29,62 @@ func (u *UserUseCase) Register(user entities.User) (*entities.Tokens, error) {
 	if err := u.userRepo.Create(user); err != nil {
 		return nil, err
 	}
-
-	// Генерация токенов
-	tokenDetails, err := GenerateTokens(user.ID, config.GetConfig().JWTKey)
+	tokens, err := u.createTokens(user.ID, ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	return tokenDetails.ToTokens(), nil
+	return tokens, nil
 }
 
 // Login Реализация метода Login
-func (u *UserUseCase) Login(email, password string) (*entities.Tokens, error) {
+func (u *UserUseCase) Login(email, password string, ctx echo.Context) (*entities.Tokens, error) {
 	user, err := u.userRepo.FindByEmail(email)
 	if err != nil || user.Password != password { // Здесь должна быть логика хэширования пароля
 		return nil, errors.New("invalid credentials")
 	}
 
-	// Генерация токенов
-	tokenDetails, err := GenerateTokens(user.ID, config.GetConfig().JWTKey)
+	tokens, err := u.createTokens(user.ID, ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return tokenDetails.ToTokens(), nil
+	return tokens, nil
 }
 
 // GetUserByID Реализация метода GetUserByID
 func (u *UserUseCase) GetUserByID(id uint64) (entities.User, error) {
 	return u.userRepo.FindByID(id)
+}
+
+// UpdateToken Реализация метода GetUserByID
+func (u *UserUseCase) UpdateToken(id uint64) (entities.User, error) {
+	return u.userRepo.FindByID(id)
+}
+
+func (u *UserUseCase) createTokens(userId uint64, ctx echo.Context) (*entities.Tokens, error) {
+	{
+		accessToken, err := GenerateToken(userId, enums.Access)
+		refreshToken, err := GenerateToken(userId, enums.Refresh)
+		if err != nil {
+			return nil, err
+		}
+
+		if err = u.tokenRepo.SaveToken(
+			userId,
+			accessToken,
+			enums.Access,
+			ctx,
+		); err != nil {
+			return nil, err
+		}
+		if err = u.tokenRepo.SaveToken(
+			userId,
+			refreshToken,
+			enums.Refresh,
+			ctx,
+		); err != nil {
+			return nil, err
+		}
+		return &entities.Tokens{RefreshToken: refreshToken, AccessToken: accessToken}, nil
+	}
 }

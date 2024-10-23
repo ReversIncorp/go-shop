@@ -11,14 +11,37 @@ import (
 	"marketplace/pkg/utils"
 	"os"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 )
 
-var container = dig.New()
+var container = dig.New() //nolint:gochecknoglobals
 
 func Container() *dig.Container {
 	return container
+}
+
+func RegisterDatabases(container *dig.Container) error {
+	if err := container.Provide(registerRedisClient); err != nil {
+		return err
+	}
+	return nil
+}
+
+func registerRedisClient() (*redis.Client, error) {
+	redisClient := redis.NewClient(
+		&redis.Options{
+			Addr:     os.Getenv("REDIS_ADDR"),
+			Password: "",
+			DB:       0,
+		},
+	)
+	pong, err := redisClient.Ping(redisClient.Context()).Result()
+	if pong != "PONG" || err != nil {
+		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+	}
+	return redisClient, nil
 }
 
 func RegisterDependencies(container *dig.Container) error {
@@ -37,6 +60,9 @@ func RegisterDependencies(container *dig.Container) error {
 		return err
 	}
 	if err := container.Provide(repository.NewStoreRepository); err != nil {
+		return err
+	}
+	if err := container.Provide(repository.NewRedisJWTRepository); err != nil {
 		return err
 	}
 
@@ -90,13 +116,12 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	var storeHandler *handlers.StoreHandler
 
 	// Получаем хэндлеры через контейнер
-	err := container.Invoke(func(uh *handlers.UserHandler, ph *handlers.ProductHandler, sh *handlers.StoreHandler) {
+	if err := container.Invoke(func(uh *handlers.UserHandler, ph *handlers.ProductHandler, sh *handlers.StoreHandler) {
 		userHandler = uh
 		productHandler = ph
 		storeHandler = sh
-	})
-	if err != nil {
-		err := fmt.Errorf(fmt.Sprintf("Failed to invoke handlers: %v\n", err))
+	}); err != nil {
+		fmt.Printf("Failed to invoke handlers: %v\n", err)
 		return err
 	}
 
