@@ -131,7 +131,11 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	var categoryHandler *handlers.CategoryHandler
 
 	// Получаем хэндлеры через контейнер
-	if err := container.Invoke(func(uh *handlers.UserHandler, ph *handlers.ProductHandler, sh *handlers.StoreHandler, ch *handlers.CategoryHandler) {
+	if err := container.Invoke(func(
+		uh *handlers.UserHandler,
+		ph *handlers.ProductHandler,
+		sh *handlers.StoreHandler,
+		ch *handlers.CategoryHandler) {
 		userHandler = uh
 		productHandler = ph
 		storeHandler = sh
