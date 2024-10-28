@@ -24,9 +24,25 @@ func (r *productRepositoryImpl) Save(product entities.Product) error {
 	product.CreatedAt = time.Now()
 	product.UpdatedAt = product.CreatedAt
 
-	_, err := r.db.Exec(`INSERT INTO products (name, description, price, quantity, category_id, store_id, created_at, updated_at) 
+	_, err := r.db.Exec(`INSERT INTO products 
+    (name, 
+     description, 
+     price, 
+     quantity, 
+     category_id, 
+     store_id, 
+     created_at, 
+     updated_at) 
                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-		product.Name, product.Description, product.Price, product.Quantity, product.CategoryID, product.StoreID, product.CreatedAt, product.UpdatedAt)
+		product.Name,
+		product.Description,
+		product.Price,
+		product.Quantity,
+		product.CategoryID,
+		product.StoreID,
+		product.CreatedAt,
+		product.UpdatedAt)
+
 	if err != nil {
 		return err
 	}
@@ -34,11 +50,29 @@ func (r *productRepositoryImpl) Save(product entities.Product) error {
 	return nil
 }
 
-func (r *productRepositoryImpl) FindByID(id int64) (entities.Product, error) {
+func (r *productRepositoryImpl) FindByID(id uint64) (entities.Product, error) {
 	var product entities.Product
-	err := r.db.QueryRow(`SELECT id, name, description, price, quantity, category_id, store_id, created_at, updated_at 
+	err := r.db.QueryRow(`SELECT 
+    id, 
+    name, 
+    description, 
+    price, 
+    quantity, 
+    category_id, 
+    store_id, 
+    created_at, 
+    updated_at 
 	                      FROM products WHERE id = $1`, id).
-		Scan(&product.ID, &product.Name, &product.Description, &product.Price, &product.Quantity, &product.CategoryID, &product.StoreID, &product.CreatedAt, &product.UpdatedAt)
+		Scan(&product.ID,
+			&product.Name,
+			&product.Description,
+			&product.Price,
+			&product.Quantity,
+			&product.CategoryID,
+			&product.StoreID,
+			&product.CreatedAt,
+			&product.UpdatedAt)
+
 	if errors.Is(err, sql.ErrNoRows) {
 		return entities.Product{}, errors.New("product not found")
 	}
@@ -62,9 +96,22 @@ func (r *productRepositoryImpl) Update(product entities.Product) error {
 	product.UpdatedAt = time.Now()
 
 	_, err = r.db.Exec(`UPDATE products 
-                        SET name = $1, description = $2, price = $3, quantity = $4, category_id = $5, store_id = $6, updated_at = $7 
+                        SET name = $1, 
+                            description = $2, 
+                            price = $3, 
+                            quantity = $4, 
+                            category_id = $5, 
+                            store_id = $6, 
+                            updated_at = $7 
                         WHERE id = $8`,
-		product.Name, product.Description, product.Price, product.Quantity, product.CategoryID, product.StoreID, product.UpdatedAt, product.ID)
+		product.Name,
+		product.Description,
+		product.Price,
+		product.Quantity,
+		product.CategoryID,
+		product.StoreID,
+		product.UpdatedAt,
+		product.ID)
 	if err != nil {
 		return err
 	}
@@ -72,7 +119,7 @@ func (r *productRepositoryImpl) Update(product entities.Product) error {
 	return nil
 }
 
-func (r *productRepositoryImpl) Delete(id int64) error {
+func (r *productRepositoryImpl) Delete(id uint64) error {
 	_, err := r.db.Exec("DELETE FROM products WHERE id = $1", id)
 	if err != nil {
 		return err
@@ -82,7 +129,18 @@ func (r *productRepositoryImpl) Delete(id int64) error {
 }
 
 func (r *productRepositoryImpl) FindProductsByParams(params entities.ProductSearchParams) ([]entities.Product, error) {
-	query := `SELECT id, name, description, price, quantity, category_id, store_id, created_at, updated_at FROM products`
+	query := `SELECT 
+    id, 
+    name,
+    description,
+    price, 
+    quantity, 
+    category_id,
+    store_id,
+    created_at, 
+    updated_at 
+	FROM products`
+
 	var conditions []string
 	var args []interface{}
 
@@ -125,7 +183,16 @@ func (r *productRepositoryImpl) FindProductsByParams(params entities.ProductSear
 	var products []entities.Product
 	for rows.Next() {
 		var product entities.Product
-		if err := rows.Scan(&product.ID, &product.Name, &product.Description, &product.Price, &product.Quantity, &product.CategoryID, &product.StoreID, &product.CreatedAt, &product.UpdatedAt); err != nil {
+		if err := rows.Scan(
+			&product.ID,
+			&product.Name,
+			&product.Description,
+			&product.Price,
+			&product.Quantity,
+			&product.CategoryID,
+			&product.StoreID,
+			&product.CreatedAt,
+			&product.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("error scanning row: %v", err)
 		}
 		products = append(products, product)

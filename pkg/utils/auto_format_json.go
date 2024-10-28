@@ -9,14 +9,14 @@ func AutoFormatJSON(data interface{}) (string, error) {
 	switch v := data.(type) {
 	case []byte:
 		// Если это []byte, проверяем, является ли это JSON, и форматируем
-		formattedJSON, err := fromBytesToJson(v)
+		formattedJSON, err := fromBytesToJSON(v)
 		if err != nil {
 			return "", err
 		}
 		return formattedJSON, nil
 	default:
 		// Если это не []byte, пытаемся сериализовать структуру в JSON
-		formattedJSON, err := fromMapToJson(data)
+		formattedJSON, err := fromMapToJSON(data)
 		if err != nil {
 			return "", err
 		}
@@ -24,7 +24,7 @@ func AutoFormatJSON(data interface{}) (string, error) {
 	}
 }
 
-func fromBytesToJson(body []byte) (string, error) {
+func fromBytesToJSON(body []byte) (string, error) {
 	var prettyJSON bytes.Buffer
 	if json.Valid(body) {
 		// Форматируем JSON с отступами
@@ -33,14 +33,13 @@ func fromBytesToJson(body []byte) (string, error) {
 			return prettyJSON.String(), err
 		}
 		return prettyJSON.String(), err
-	} else {
-		// Если тело не JSON, просто копируем его
-		prettyJSON.Write(body)
 	}
+	// Если тело не JSON, просто копируем его
+	prettyJSON.Write(body)
 	return prettyJSON.String(), nil
 }
 
-func fromMapToJson(data interface{}) (string, error) {
+func fromMapToJSON(data interface{}) (string, error) {
 	jsonData, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
 		return "", err

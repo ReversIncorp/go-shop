@@ -18,8 +18,8 @@ func NewCategoryRepository(db *sql.DB) repository2.CategoryRepository {
 	}
 }
 
-func (r *categoryRepositoryImpl) IsExist(id int64) (bool, error) {
-	var existingStoreID int64
+func (r *categoryRepositoryImpl) IsExist(id uint64) (bool, error) {
+	var existingStoreID uint64
 	err := r.db.QueryRow(
 		"SELECT id FROM categories WHERE id = $1",
 		id,
@@ -35,8 +35,8 @@ func (r *categoryRepositoryImpl) IsExist(id int64) (bool, error) {
 	return true, nil
 }
 
-func (r *categoryRepositoryImpl) IsBelongsToStore(categoryID, storeID int64) (bool, error) {
-	var existingStoreID int64
+func (r *categoryRepositoryImpl) IsBelongsToStore(categoryID, storeID uint64) (bool, error) {
+	var existingStoreID uint64
 	err := r.db.QueryRow(
 		"SELECT store_id FROM categories WHERE id = $1",
 		categoryID,
@@ -60,9 +60,18 @@ func (r *categoryRepositoryImpl) Save(category entities.Category) error {
 	category.CreatedAt = time.Now()
 	category.UpdatedAt = category.CreatedAt
 
-	_, err := r.db.Exec(`INSERT INTO categories (name, description, store_id, created_at, updated_at) 
+	_, err := r.db.Exec(`INSERT INTO categories (
+                        name,
+                        description,
+                        store_id, 
+                        created_at, 
+                        updated_at) 
                         VALUES ($1, $2, $3, $4, $5)`,
-		category.Name, category.Description, category.StoreID, category.CreatedAt, category.UpdatedAt)
+		category.Name,
+		category.Description,
+		category.StoreID,
+		category.CreatedAt,
+		category.UpdatedAt)
 	if err != nil {
 		return err
 	}
@@ -70,11 +79,23 @@ func (r *categoryRepositoryImpl) Save(category entities.Category) error {
 	return nil
 }
 
-func (r *categoryRepositoryImpl) FindByID(id int64) (entities.Category, error) {
+func (r *categoryRepositoryImpl) FindByID(id uint64) (entities.Category, error) {
 	var category entities.Category
-	err := r.db.QueryRow(`SELECT id, name, description, store_id, created_at, updated_at 
+	err := r.db.QueryRow(`SELECT 
+    id, 
+    name,
+    description,
+    store_id,
+    created_at, 
+    updated_at 
 	                      FROM categories WHERE id = $1`, id).
-		Scan(&category.ID, &category.Name, &category.Description, &category.StoreID, &category.CreatedAt, &category.UpdatedAt)
+		Scan(&category.ID,
+			&category.Name,
+			&category.Description,
+			&category.StoreID,
+			&category.CreatedAt,
+			&category.UpdatedAt)
+
 	if errors.Is(err, sql.ErrNoRows) {
 		return entities.Category{}, errors.New("category not found")
 	}
@@ -90,9 +111,15 @@ func (r *categoryRepositoryImpl) Update(category entities.Category) error {
 
 	//Разрешаем менять все данные кроме айди стора, его нельзя
 	_, err := r.db.Exec(`UPDATE categories 
-                        SET name = $1, description = $2, updated_at = $3
+                        SET name = $1, 
+                            description = $2, 
+                            updated_at = $3
                         WHERE id = $4`,
-		category.Name, category.Description, category.UpdatedAt, category.ID)
+		category.Name,
+		category.Description,
+		category.UpdatedAt,
+		category.ID)
+
 	if err != nil {
 		return err
 	}
@@ -100,7 +127,7 @@ func (r *categoryRepositoryImpl) Update(category entities.Category) error {
 	return nil
 }
 
-func (r *categoryRepositoryImpl) Delete(id int64) error {
+func (r *categoryRepositoryImpl) Delete(id uint64) error {
 	_, err := r.db.Exec("DELETE FROM categories WHERE id = $1", id)
 	if err != nil {
 		return err
@@ -108,10 +135,17 @@ func (r *categoryRepositoryImpl) Delete(id int64) error {
 	return nil
 }
 
-func (r *categoryRepositoryImpl) FindAllByStore(storeID int64) ([]entities.Category, error) {
-	rows, err := r.db.Query(`SELECT id, name, description, store_id, created_at, updated_at 
+func (r *categoryRepositoryImpl) FindAllByStore(storeID uint64) ([]entities.Category, error) {
+	rows, err := r.db.Query(`SELECT 
+    id, 
+    name, 
+    description,
+    store_id, 
+    created_at, 
+    updated_at 
                              FROM categories 
                              WHERE store_id = $1`, storeID)
+
 	defer rows.Close()
 	if err != nil {
 		return nil, err
@@ -120,7 +154,12 @@ func (r *categoryRepositoryImpl) FindAllByStore(storeID int64) ([]entities.Categ
 	var categories []entities.Category
 	for rows.Next() {
 		var category entities.Category
-		if err := rows.Scan(&category.ID, &category.Name, &category.Description, &category.StoreID, &category.CreatedAt, &category.UpdatedAt); err != nil {
+		if err := rows.Scan(&category.ID,
+			&category.Name,
+			&category.Description,
+			&category.StoreID,
+			&category.CreatedAt,
+			&category.UpdatedAt); err != nil {
 			return nil, err
 		}
 		categories = append(categories, category)

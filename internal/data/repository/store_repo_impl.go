@@ -18,7 +18,7 @@ func NewStoreRepository(db *sql.DB) repository2.StoreRepository {
 	}
 }
 
-func (r *storeRepositoryImpl) IsExist(id int64) (bool, error) {
+func (r *storeRepositoryImpl) IsExist(id uint64) (bool, error) {
 	var existingStoreID int64
 	err := r.db.QueryRow(
 		"SELECT id FROM stores WHERE id = $1",
@@ -35,25 +35,46 @@ func (r *storeRepositoryImpl) IsExist(id int64) (bool, error) {
 	return true, nil
 }
 
-func (r *storeRepositoryImpl) Save(store entities.Store) (int64, error) {
+func (r *storeRepositoryImpl) Save(store entities.Store) (uint64, error) {
 	store.UpdatedAt = time.Now()
 	store.CreatedAt = time.Now()
 
-	var newStoreID int64
-	err := r.db.QueryRow(`INSERT INTO stores (name, description, owner_id, created_at, updated_at) 
+	var newStoreID uint64
+	err := r.db.QueryRow(`INSERT INTO stores 
+    (name, 
+     description, 
+     owner_id, 
+     created_at, 
+     updated_at) 
                          VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-		store.Name, store.Description, store.OwnerID, store.CreatedAt, store.UpdatedAt).Scan(&newStoreID)
+		store.Name,
+		store.Description,
+		store.OwnerID,
+		store.CreatedAt,
+		store.UpdatedAt).Scan(&newStoreID)
+
 	if err != nil {
 		return 0, err
 	}
 	return newStoreID, nil
 }
 
-func (r *storeRepositoryImpl) FindByID(id int64) (entities.Store, error) {
+func (r *storeRepositoryImpl) FindByID(id uint64) (entities.Store, error) {
 	var store entities.Store
-	err := r.db.QueryRow(`SELECT id, name, description, owner_id, created_at, updated_at 
+	err := r.db.QueryRow(`SELECT 
+    id,
+    name, 
+    description,
+    owner_id, 
+    created_at, 
+    updated_at 
                           FROM stores WHERE id = $1`, id).
-		Scan(&store.ID, &store.Name, &store.Description, &store.OwnerID, &store.CreatedAt, &store.UpdatedAt)
+		Scan(&store.ID,
+			&store.Name,
+			&store.Description,
+			&store.OwnerID,
+			&store.CreatedAt,
+			&store.UpdatedAt)
 
 	if err == sql.ErrNoRows {
 		return entities.Store{}, errors.New("store not found")
@@ -67,8 +88,16 @@ func (r *storeRepositoryImpl) FindByID(id int64) (entities.Store, error) {
 
 func (r *storeRepositoryImpl) Update(store entities.Store) error {
 	store.UpdatedAt = time.Now()
-	_, err := r.db.Exec(`UPDATE stores SET name = $1, description = $2, updated_at = $3 WHERE id = $4`,
-		store.Name, store.Description, store.UpdatedAt, store.ID)
+	_, err := r.db.Exec(`UPDATE stores SET
+                  name = $1,
+                  description = $2,
+                  updated_at = $3 
+              WHERE id = $4`,
+		store.Name,
+		store.Description,
+		store.UpdatedAt,
+		store.ID)
+
 	if err != nil {
 		return err
 	}
@@ -76,7 +105,7 @@ func (r *storeRepositoryImpl) Update(store entities.Store) error {
 	return nil
 }
 
-func (r *storeRepositoryImpl) Delete(id int64) error {
+func (r *storeRepositoryImpl) Delete(id uint64) error {
 	_, err := r.db.Exec("DELETE FROM stores WHERE id = $1", id)
 	if err != nil {
 		return err
@@ -85,7 +114,15 @@ func (r *storeRepositoryImpl) Delete(id int64) error {
 }
 
 func (r *storeRepositoryImpl) FindAll() ([]entities.Store, error) {
-	rows, err := r.db.Query(`SELECT id, name, description, owner_id, created_at, updated_at FROM stores`)
+	rows, err := r.db.Query(`SELECT 
+    id, 
+    name,
+    description,
+    owner_id, 
+    created_at, 
+    updated_at 
+	FROM stores`)
+
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +131,12 @@ func (r *storeRepositoryImpl) FindAll() ([]entities.Store, error) {
 	var stores []entities.Store
 	for rows.Next() {
 		var store entities.Store
-		if err := rows.Scan(&store.ID, &store.Name, &store.Description, &store.OwnerID, &store.CreatedAt, &store.UpdatedAt); err != nil {
+		if err := rows.Scan(&store.ID,
+			&store.Name,
+			&store.Description,
+			&store.OwnerID,
+			&store.CreatedAt,
+			&store.UpdatedAt); err != nil {
 			return nil, err
 		}
 		stores = append(stores, store)

@@ -3,9 +3,10 @@ package repository
 import (
 	"database/sql"
 	"errors"
-	"github.com/lib/pq"
 	"marketplace/internal/domain/entities"
 	repository2 "marketplace/internal/domain/repository"
+
+	"github.com/lib/pq"
 )
 
 type userRepositoryImpl struct {
@@ -18,13 +19,17 @@ func NewUserRepository(db *sql.DB) repository2.UserRepository {
 	}
 }
 
-func (r *userRepositoryImpl) AddOwningStore(userID, storeID int64) error {
-	_, err := r.db.Exec(`UPDATE users SET owning_stores = array_append(owning_stores, $1) WHERE id = $2`, storeID, userID)
+func (r *userRepositoryImpl) AddOwningStore(userID, storeID uint64) error {
+	_, err := r.db.Exec(`
+		UPDATE users 
+		SET owning_stores = array_append(array_remove(owning_stores, $1), $1) 
+		WHERE id = $2
+	`, storeID, userID)
 	return err
 }
 
-func (r *userRepositoryImpl) IsOwnsStore(userID, storeID int64) (bool, error) {
-	var owningStores []int64
+func (r *userRepositoryImpl) IsOwnsStore(userID, storeID uint64) (bool, error) {
+	var owningStores []int64 // Изменение типа для лучшей совместимости
 	err := r.db.QueryRow(
 		"SELECT owning_stores FROM users WHERE id = $1",
 		userID,
@@ -35,7 +40,7 @@ func (r *userRepositoryImpl) IsOwnsStore(userID, storeID int64) (bool, error) {
 	}
 
 	for _, sID := range owningStores {
-		if sID == storeID {
+		if uint64(sID) == storeID { // Приведение типа при сравнении
 			return true, nil
 		}
 	}
@@ -51,9 +56,18 @@ func (r *userRepositoryImpl) Create(user entities.User) error {
 		return errors.New("user already exists")
 	}
 
-	insertQuery := `INSERT INTO users (name, email, password, is_seller) 
+	insertQuery := `INSERT INTO users 
+    (name, 
+     email, 
+     password, 
+     is_seller) 
 	                VALUES ($1, $2, $3, $4) RETURNING id`
-	err = r.db.QueryRow(insertQuery, user.Name, user.Email, user.Password, user.IsSeller).Scan(&user.ID)
+	err = r.db.QueryRow(insertQuery,
+		user.Name,
+		user.Email,
+		user.Password,
+		user.IsSeller).Scan(&user.ID)
+
 	if err != nil {
 		return err
 	}
@@ -63,10 +77,20 @@ func (r *userRepositoryImpl) Create(user entities.User) error {
 
 func (r *userRepositoryImpl) FindByEmail(email string) (entities.User, error) {
 	var user entities.User
-	query := `SELECT id, name, email, password, is_seller
+	query := `SELECT 
+    	id,
+       name, 
+       email,
+       password,
+       is_seller
 	          FROM users WHERE email = $1`
 	err := r.db.QueryRow(query, email).Scan(
-		&user.ID, &user.Name, &user.Email, &user.Password, &user.IsSeller)
+		&user.ID,
+		&user.Name,
+		&user.Email,
+		&user.Password,
+		&user.IsSeller)
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return entities.User{}, errors.New("user not found")
@@ -78,10 +102,20 @@ func (r *userRepositoryImpl) FindByEmail(email string) (entities.User, error) {
 
 func (r *userRepositoryImpl) FindByID(id uint64) (entities.User, error) {
 	var user entities.User
-	query := `SELECT id, name, email, password, is_seller 
+	query := `SELECT 
+    	id, 
+       name, 
+       email, 
+       password, 
+       is_seller 
 	          FROM users WHERE id = $1`
 	err := r.db.QueryRow(query, id).Scan(
-		&user.ID, &user.Name, &user.Email, &user.Password, &user.IsSeller)
+		&user.ID,
+		&user.Name,
+		&user.Email,
+		&user.Password,
+		&user.IsSeller)
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return entities.User{}, errors.New("user not found")
