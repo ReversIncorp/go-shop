@@ -27,7 +27,15 @@ func (h *StoreHandler) CreateStore(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
 	}
 
-	if err := h.storeUseCase.CreateStore(store); err != nil {
+	userID := c.Get("user_id")
+	uid, ok := userID.(float64)
+	if !ok || userID == nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid or missing user_id from token"})
+	}
+
+	store.OwnerID = int64(uid)
+
+	if err := h.storeUseCase.CreateStore(store, uint64(uid)); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
 
@@ -53,11 +61,25 @@ func (h *StoreHandler) GetStoreByID(c echo.Context) error {
 func (h *StoreHandler) UpdateStore(c echo.Context) error {
 	var store entities.Store
 
-	if err := c.Bind(&store); err != nil {
+	id := c.Param("id")
+	storeID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
+	}
+
+	if err = c.Bind(&store); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
 	}
 
-	if err := h.storeUseCase.UpdateStore(store); err != nil {
+	store.ID = storeID
+
+	userID := c.Get("user_id")
+	uid, ok := userID.(float64)
+	if !ok || userID == nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid or missing user_id from token"})
+	}
+
+	if err = h.storeUseCase.UpdateStore(store, uint64(uid)); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
 
@@ -69,12 +91,18 @@ func (h *StoreHandler) DeleteStore(c echo.Context) error {
 	id := c.Param("id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err.Error())
-	}
-	if err := h.storeUseCase.DeleteStore(uint64ID); err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
 	}
 
+	userID := c.Get("user_id")
+	uid, ok := userID.(float64)
+	if !ok || userID == nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid or missing user_id from token"})
+	}
+
+	if err = h.storeUseCase.DeleteStore(uint64ID, uint64(uid)); err != nil {
+		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
+	}
 	return c.NoContent(http.StatusNoContent)
 }
 

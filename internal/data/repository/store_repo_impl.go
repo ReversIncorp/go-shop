@@ -1,89 +1,149 @@
 package repository
 
 import (
+	"database/sql"
 	"errors"
 	"marketplace/internal/domain/entities"
-	repository2 "marketplace/internal/domain/repository"
-	"sync"
+	"marketplace/internal/domain/repository"
 	"time"
 )
 
-type inMemoryStoreRepository struct {
-	stores map[uint64]entities.Store
-	mu     sync.Mutex
+type storeRepositoryImpl struct {
+	db *sql.DB
 }
 
-func NewStoreRepository() repository2.StoreRepository {
-	return &inMemoryStoreRepository{
-		stores: make(map[uint64]entities.Store),
+func NewStoreRepository(db *sql.DB) repository.StoreRepository {
+	return &storeRepositoryImpl{
+		db: db,
 	}
 }
 
-func (r *inMemoryStoreRepository) Save(store entities.Store) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *storeRepositoryImpl) IsExist(id uint64) (bool, error) {
+	var existingStoreID int64
+	err := r.db.QueryRow(
+		"SELECT id FROM stores WHERE id = $1",
+		id,
+	).Scan(&existingStoreID)
 
-	// Если магазин уже существует, вернем ошибку
-	if _, exists := r.stores[store.ID]; exists {
-		return errors.New("store already exists")
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, errors.New("store not found")
+	}
+	if err != nil {
+		return false, err
 	}
 
-	// Устанавливаем время создания и обновления
+	return true, nil
+}
+
+func (r *storeRepositoryImpl) Save(store entities.Store) (uint64, error) {
+	store.UpdatedAt = time.Now()
 	store.CreatedAt = time.Now()
-	store.UpdatedAt = store.CreatedAt
 
-	r.stores[store.ID] = store
-	return nil
+	var newStoreID uint64
+	err := r.db.QueryRow(`INSERT INTO stores 
+    (name, 
+     description, 
+     owner_id, 
+     created_at, 
+     updated_at) 
+                         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+		store.Name,
+		store.Description,
+		store.OwnerID,
+		store.CreatedAt,
+		store.UpdatedAt).Scan(&newStoreID)
+
+	if err != nil {
+		return 0, err
+	}
+	return newStoreID, nil
 }
 
-func (r *inMemoryStoreRepository) FindByID(id uint64) (entities.Store, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *storeRepositoryImpl) FindByID(id uint64) (entities.Store, error) {
+	var store entities.Store
+	err := r.db.QueryRow(`SELECT 
+    id,
+    name, 
+    description,
+    owner_id, 
+    created_at, 
+    updated_at 
+                          FROM stores WHERE id = $1`, id).
+		Scan(&store.ID,
+			&store.Name,
+			&store.Description,
+			&store.OwnerID,
+			&store.CreatedAt,
+			&store.UpdatedAt)
 
-	store, exists := r.stores[id]
-	if !exists {
+	if err == sql.ErrNoRows {
 		return entities.Store{}, errors.New("store not found")
+	}
+	if err != nil {
+		return entities.Store{}, err
 	}
 
 	return store, nil
 }
 
-func (r *inMemoryStoreRepository) Update(store entities.Store) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	_, exists := r.stores[store.ID]
-	if !exists {
-		return errors.New("store not found")
-	}
-
-	// Обновляем время изменения
+func (r *storeRepositoryImpl) Update(store entities.Store) error {
 	store.UpdatedAt = time.Now()
+	_, err := r.db.Exec(`UPDATE stores SET
+                  name = $1,
+                  description = $2,
+                  updated_at = $3 
+              WHERE id = $4`,
+		store.Name,
+		store.Description,
+		store.UpdatedAt,
+		store.ID)
 
-	r.stores[store.ID] = store
-	return nil
-}
-
-func (r *inMemoryStoreRepository) Delete(id uint64) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	_, exists := r.stores[id]
-	if !exists {
-		return errors.New("store not found")
+	if err != nil {
+		return err
 	}
 
-	delete(r.stores, id)
 	return nil
 }
 
-func (r *inMemoryStoreRepository) FindAll() ([]entities.Store, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (r *storeRepositoryImpl) Delete(id uint64) error {
+	_, err := r.db.Exec("DELETE FROM stores WHERE id = $1", id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *storeRepositoryImpl) FindAll() ([]entities.Store, error) {
+	rows, err := r.db.Query(`SELECT 
+    id, 
+    name,
+    description,
+    owner_id, 
+    created_at, 
+    updated_at 
+	FROM stores`)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
 	var stores []entities.Store
-	for _, store := range r.stores {
+	for rows.Next() {
+		var store entities.Store
+		if err := rows.Scan(&store.ID,
+			&store.Name,
+			&store.Description,
+			&store.OwnerID,
+			&store.CreatedAt,
+			&store.UpdatedAt); err != nil {
+			return nil, err
+		}
 		stores = append(stores, store)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return stores, nil

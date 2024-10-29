@@ -9,5 +9,5 @@ type ProductRepository interface {
 	FindByID(id uint64) (entities.Product, error)
 	Update(product entities.Product) error
 	Delete(id uint64) error
-	FindAllByStore(storeID uint64) ([]entities.Product, error)
+	FindProductsByParams(params entities.ProductSearchParams) ([]entities.Product, error)
 }
