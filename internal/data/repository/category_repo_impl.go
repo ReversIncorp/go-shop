@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"marketplace/internal/domain/entities"
-	repository2 "marketplace/internal/domain/repository"
+	"marketplace/internal/domain/repository"
 	"time"
 )
 
@@ -12,7 +12,7 @@ type categoryRepositoryImpl struct {
 	db *sql.DB
 }
 
-func NewCategoryRepository(db *sql.DB) repository2.CategoryRepository {
+func NewCategoryRepository(db *sql.DB) repository.CategoryRepository {
 	return &categoryRepositoryImpl{
 		db: db,
 	}

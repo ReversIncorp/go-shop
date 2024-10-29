@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"marketplace/internal/domain/entities"
-	repository2 "marketplace/internal/domain/repository"
+	"marketplace/internal/domain/repository"
 
 	"github.com/lib/pq"
 )
@@ -13,7 +13,7 @@ type userRepositoryImpl struct {
 	db *sql.DB
 }
 
-func NewUserRepository(db *sql.DB) repository2.UserRepository {
+func NewUserRepository(db *sql.DB) repository.UserRepository {
 	return &userRepositoryImpl{
 		db: db,
 	}

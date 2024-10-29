@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"marketplace/internal/domain/entities"
-	repository2 "marketplace/internal/domain/repository"
+	"marketplace/internal/domain/repository"
 	"strings"
 	"time"
 )
@@ -14,7 +14,7 @@ type productRepositoryImpl struct {
 	db *sql.DB
 }
 
-func NewProductRepository(db *sql.DB) repository2.ProductRepository {
+func NewProductRepository(db *sql.DB) repository.ProductRepository {
 	return &productRepositoryImpl{
 		db: db,
 	}
