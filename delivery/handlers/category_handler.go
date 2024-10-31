@@ -40,22 +40,6 @@ func (h *CategoryHandler) CreateCategory(c echo.Context) error {
 
 }
 
-// GetCategoryByID обрабатывает запрос на получение категории по ID
-func (h *CategoryHandler) GetCategoryByID(c echo.Context) error {
-	id := c.Param("id")
-	uint64ID, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid category ID"})
-	}
-
-	category, err := h.categoryUseCase.GetCategoryByID(uint64ID)
-	if err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
-	}
-
-	return c.JSON(http.StatusOK, category)
-}
-
 // UpdateCategory обрабатывает запрос на обновление категории
 func (h *CategoryHandler) UpdateCategory(c echo.Context) error {
 	var category entities.Category
@@ -66,7 +50,7 @@ func (h *CategoryHandler) UpdateCategory(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid category ID"})
 	}
 
-	if err := c.Bind(&category); err != nil {
+	if err = c.Bind(&category); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
 	}
 
@@ -78,7 +62,7 @@ func (h *CategoryHandler) UpdateCategory(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid or missing user_id from token"})
 	}
 
-	if err := h.categoryUseCase.UpdateCategory(category, uint64(uid)); err != nil {
+	if err = h.categoryUseCase.UpdateCategory(category, uint64(uid)); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
 	return c.JSON(http.StatusOK, category)
@@ -98,7 +82,7 @@ func (h *CategoryHandler) DeleteCategory(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid or missing user_id from token"})
 	}
 
-	if err := h.categoryUseCase.DeleteCategory(uint64ID, uint64(uid)); err != nil {
+	if err = h.categoryUseCase.DeleteCategory(uint64ID, uint64(uid)); err != nil {
 		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
 	}
 	return c.NoContent(http.StatusNoContent)

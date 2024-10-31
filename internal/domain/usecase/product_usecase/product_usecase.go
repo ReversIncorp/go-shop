@@ -8,15 +8,22 @@ import (
 
 // ProductUseCase реализует интерфейс ProductUseCase
 type ProductUseCase struct {
-	productRepo  repository.ProductRepository
-	storeRepo    repository.StoreRepository
-	userRepo     repository.UserRepository
-	categoryRepo repository.CategoryRepository
+	productRepo repository.ProductRepository
+	storeRepo   repository.StoreRepository
+	userRepo    repository.UserRepository
 }
 
 // NewProductUseCase создает новый экземпляр ProductUseCase
-func NewProductUseCase(productRepo repository.ProductRepository, storeRepo repository.StoreRepository, userRepo repository.UserRepository, categoryRepo repository.CategoryRepository) *ProductUseCase {
-	return &ProductUseCase{productRepo: productRepo, storeRepo: storeRepo, userRepo: userRepo, categoryRepo: categoryRepo}
+func NewProductUseCase(
+	productRepo repository.ProductRepository,
+	storeRepo repository.StoreRepository,
+	userRepo repository.UserRepository,
+) *ProductUseCase {
+	return &ProductUseCase{
+		productRepo: productRepo,
+		storeRepo:   storeRepo,
+		userRepo:    userRepo,
+	}
 }
 
 // CreateProduct создает новый продукт
@@ -26,7 +33,7 @@ func (p *ProductUseCase) CreateProduct(product entities.Product, uid uint64) err
 		return errors.New("store not found")
 	}
 
-	categoryBelongs, err := p.categoryRepo.IsBelongsToStore(product.CategoryID, product.StoreID)
+	categoryBelongs, err := p.storeRepo.IsCategoryAttached(product.StoreID, product.CategoryID)
 	if err != nil || !categoryBelongs {
 		return errors.New("category not found or not belongs this store")
 	}
@@ -51,7 +58,7 @@ func (p *ProductUseCase) UpdateProduct(product entities.Product, uid uint64) err
 		return errors.New("store not found")
 	}
 
-	categoryBelongs, err := p.categoryRepo.IsBelongsToStore(product.CategoryID, product.StoreID)
+	categoryBelongs, err := p.storeRepo.IsCategoryAttached(product.StoreID, product.CategoryID)
 	if err != nil || !categoryBelongs {
 		return errors.New("category not found or not belongs this store")
 	}

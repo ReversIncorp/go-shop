@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
 	"time"
@@ -147,4 +148,32 @@ func (r *storeRepositoryImpl) FindAll() ([]entities.Store, error) {
 	}
 
 	return stores, nil
+}
+
+func (r *storeRepositoryImpl) AttachCategory(storeID, categoryID uint64) error {
+	_, err := r.db.Exec(`INSERT INTO store_categories (store_id, category_id) VALUES ($1, $2)`, storeID, categoryID)
+	if err != nil {
+		return fmt.Errorf("failed to add category to store: %w", err)
+	}
+	return nil
+}
+
+func (r *storeRepositoryImpl) IsCategoryAttached(storeID, categoryID uint64) (bool, error) {
+	var exists bool
+	query := `SELECT EXISTS(SELECT 1 FROM store_categories WHERE store_id = $1 AND category_id = $2)`
+
+	err := r.db.QueryRow(query, storeID, categoryID).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+
+func (r *storeRepositoryImpl) DetachCategory(storeID, categoryID uint64) error {
+	_, err := r.db.Exec(`DELETE FROM store_categories WHERE store_id = $1 AND category_id = $2`, storeID, categoryID)
+	if err != nil {
+		return err
+	}
+	return nil
 }

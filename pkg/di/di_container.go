@@ -165,10 +165,11 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	authorizedScope.PUT("/stores/:id", storeHandler.UpdateStore)
 	authorizedScope.DELETE("/stores/:id", storeHandler.DeleteStore)
 	authorizedScope.GET("/stores", storeHandler.GetAllStores)
+	authorizedScope.POST("/stores/:store_id/categories", storeHandler.AddCategoryToStore)
+	authorizedScope.DELETE("/stores/:store_id/categories/:category_id", storeHandler.DeleteCategoryFromStore)
 
 	// Регистрация маршрутов для категорий
 	authorizedScope.POST("/categories", categoryHandler.CreateCategory)
-	authorizedScope.GET("/categories/:id", categoryHandler.GetCategoryByID)
 	authorizedScope.PUT("/categories/:id", categoryHandler.UpdateCategory)
 	authorizedScope.DELETE("/categories/:id", categoryHandler.DeleteCategory)
 	authorizedScope.GET("/stores/:store_id/categories", categoryHandler.GetAllCategoriesByStore)

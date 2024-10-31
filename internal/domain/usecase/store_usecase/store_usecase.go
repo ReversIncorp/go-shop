@@ -8,13 +8,22 @@ import (
 
 // StoreUseCase реализует интерфейс StoreUseCase
 type StoreUseCase struct {
-	storeRepo repository.StoreRepository
-	userRepo  repository.UserRepository
+	storeRepo    repository.StoreRepository
+	userRepo     repository.UserRepository
+	categoryRepo repository.CategoryRepository
 }
 
 // NewStoreUseCase создает новый экземпляр StoreUseCase
-func NewStoreUseCase(storeRepo repository.StoreRepository, userRepo repository.UserRepository) *StoreUseCase {
-	return &StoreUseCase{storeRepo: storeRepo, userRepo: userRepo}
+func NewStoreUseCase(
+	storeRepo repository.StoreRepository,
+	userRepo repository.UserRepository,
+	categoryRepo repository.CategoryRepository,
+) *StoreUseCase {
+	return &StoreUseCase{
+		storeRepo:    storeRepo,
+		userRepo:     userRepo,
+		categoryRepo: categoryRepo,
+	}
 }
 
 // CreateStore создает новый магазин
@@ -65,4 +74,44 @@ func (s *StoreUseCase) DeleteStore(id uint64, uid uint64) error {
 // GetAllStores получает все магазины
 func (s *StoreUseCase) GetAllStores() ([]entities.Store, error) {
 	return s.storeRepo.FindAll()
+}
+
+// AttachCategoryToStore добавляет категорию к магазину
+func (s *StoreUseCase) AttachCategoryToStore(storeID, categoryID, uid uint64) error {
+	categoryExist, err := s.categoryRepo.IsExist(categoryID)
+	if err != nil || !categoryExist {
+		return errors.New("category not found")
+	}
+
+	isOwner, err := s.userRepo.IsOwnsStore(uid, storeID)
+	if err != nil || !isOwner {
+		return errors.New("user does not owning this store")
+	}
+
+	isAttached, err := s.storeRepo.IsCategoryAttached(storeID, categoryID)
+	if err != nil || isAttached {
+		return errors.New("category is attached to store")
+	}
+
+	return s.storeRepo.AttachCategory(storeID, categoryID)
+}
+
+// DetachCategoryFromStore открепляет категорию от магазина
+func (s *StoreUseCase) DetachCategoryFromStore(storeID, categoryID, uid uint64) error {
+	categoryExist, err := s.categoryRepo.IsExist(categoryID)
+	if err != nil || !categoryExist {
+		return errors.New("category not found")
+	}
+
+	isOwner, err := s.userRepo.IsOwnsStore(uid, storeID)
+	if err != nil || !isOwner {
+		return errors.New("user does not owning this store")
+	}
+
+	isAttached, err := s.storeRepo.IsCategoryAttached(storeID, categoryID)
+	if err != nil || !isAttached {
+		return errors.New("category is not attached to store")
+	}
+
+	return s.storeRepo.DetachCategory(storeID, categoryID)
 }
