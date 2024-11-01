@@ -161,17 +161,18 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	e.POST("/users/login", userHandler.Login)
 
 	// Регистрация маршрутов для продуктов
-	authorizedScope.POST("/products", productHandler.CreateProduct)
 	authorizedScope.GET("/products/:id", productHandler.GetProductByID)
 	authorizedScope.GET("/products", productHandler.GetProductsByFilters)
-	authorizedScope.PUT("/products/:id", productHandler.UpdateProduct)
-	authorizedScope.DELETE("/products/:id", productHandler.DeleteProduct)
+	// Добавление продуктов для админов сторов
+	storeAdminScope.POST("/products", productHandler.CreateProduct)
+	storeAdminScope.PUT("/products/:id", productHandler.UpdateProduct)
+	storeAdminScope.DELETE("/products/:id", productHandler.DeleteProduct)
 
 	// Регистрация маршрутов для магазинов
 	authorizedScope.POST("/stores", storeHandler.CreateStore)
 	authorizedScope.GET("/stores/:store_id", storeHandler.GetStoreByID)
 	authorizedScope.GET("/stores", storeHandler.GetAllStores)
-	// Используем новый скоуп для маршрутов, требующих прав администратора магазина
+	// Для админов сторов
 	storeAdminScope.PUT("", storeHandler.UpdateStore)
 	storeAdminScope.DELETE("", storeHandler.DeleteStore)
 
