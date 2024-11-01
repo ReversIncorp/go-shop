@@ -124,29 +124,37 @@ func RegisterMiddleware(container *dig.Container, e *echo.Echo) error {
 }
 
 func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
-	// Инициализация HTTP-хэндлеров
+	// Инициализация HTTP-хэндлеров и use cases
 	var userHandler *handlers.UserHandler
 	var productHandler *handlers.ProductHandler
 	var storeHandler *handlers.StoreHandler
 	var categoryHandler *handlers.CategoryHandler
+	var storeUseCase *storeUsecase.StoreUseCase
 
-	// Получаем хэндлеры через контейнер
+	// Получаем хэндлеры и use case через контейнер
 	if err := container.Invoke(func(
 		uh *handlers.UserHandler,
 		ph *handlers.ProductHandler,
 		sh *handlers.StoreHandler,
-		ch *handlers.CategoryHandler) {
+		ch *handlers.CategoryHandler,
+		su *storeUsecase.StoreUseCase) {
 		userHandler = uh
 		productHandler = ph
 		storeHandler = sh
 		categoryHandler = ch
+		storeUseCase = su
 	}); err != nil {
-		fmt.Print("Failed to invoke handlers: %v\n", err)
+		fmt.Printf("Failed to invoke handlers or use case: %v\n", err)
 		return err
 	}
 
+	// Основной скоуп для авторизованных юзеров
 	authorizedScope := e.Group("")
 	authorizedScope.Use(middleware.JWTMiddleware)
+
+	// Скоуп для админов сторов
+	storeAdminScope := authorizedScope.Group("/stores/:store_id")
+	storeAdminScope.Use(middleware.StoreAdminMiddleware(storeUseCase))
 
 	// Регистрация маршрутов для пользователей
 	e.POST("/users", userHandler.Register)
@@ -161,10 +169,11 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 
 	// Регистрация маршрутов для магазинов
 	authorizedScope.POST("/stores", storeHandler.CreateStore)
-	authorizedScope.GET("/stores/:id", storeHandler.GetStoreByID)
-	authorizedScope.PUT("/stores/:id", storeHandler.UpdateStore)
-	authorizedScope.DELETE("/stores/:id", storeHandler.DeleteStore)
+	authorizedScope.GET("/stores/:store_id", storeHandler.GetStoreByID)
 	authorizedScope.GET("/stores", storeHandler.GetAllStores)
+	// Используем новый скоуп для маршрутов, требующих прав администратора магазина
+	storeAdminScope.PUT("", storeHandler.UpdateStore)
+	storeAdminScope.DELETE("", storeHandler.DeleteStore)
 
 	// Регистрация маршрутов для категорий
 	authorizedScope.POST("/categories", categoryHandler.CreateCategory)

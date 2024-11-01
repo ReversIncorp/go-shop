@@ -31,7 +31,7 @@ func (p *ProductUseCase) CreateProduct(product entities.Product, uid uint64) err
 		return errors.New("category not found or not belongs this store")
 	}
 
-	isOwner, err := p.userRepo.IsOwnsStore(uid, product.StoreID)
+	isOwner, err := p.storeRepo.IsUserStoreAdmin(product.StoreID, uid)
 	if err != nil || !isOwner {
 		return errors.New("user does not owning this store")
 	}
@@ -56,7 +56,7 @@ func (p *ProductUseCase) UpdateProduct(product entities.Product, uid uint64) err
 		return errors.New("category not found or not belongs this store")
 	}
 
-	isOwner, err := p.userRepo.IsOwnsStore(uid, product.StoreID)
+	isOwner, err := p.storeRepo.IsUserStoreAdmin(product.StoreID, uid)
 	if err != nil || !isOwner {
 		return errors.New("user does not owning this store")
 	}
@@ -71,7 +71,7 @@ func (p *ProductUseCase) DeleteProduct(id uint64, uid uint64) error {
 		return errors.New("product not found")
 	}
 
-	isOwner, err := p.userRepo.IsOwnsStore(uid, product.StoreID)
+	isOwner, err := p.storeRepo.IsUserStoreAdmin(product.StoreID, uid)
 	if err != nil || !isOwner {
 		return errors.New("user does not owning this store")
 	}
