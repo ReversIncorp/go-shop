@@ -13,6 +13,10 @@ type StoreRepository interface {
 	FindByID(id uint64) (entities.Store, error)
 	FindAll() ([]entities.Store, error)
 
+	AttachCategory(storeID, categoryID uint64) error
+	IsCategoryAttached(storeID, categoryID uint64) (bool, error)
+	DetachCategory(storeID, categoryID uint64) error
+
 	IsUserStoreAdmin(storeID, uid uint64) (bool, error)
 	AddUserStoreAdmin(storeID, uid uint64, owner bool) error
 }

@@ -100,3 +100,47 @@ func (h *StoreHandler) GetAllStores(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, stores)
 }
+
+// AttachCategoryToStore связывает категорию с магазином
+func (h *StoreHandler) AttachCategoryToStore(c echo.Context) error {
+	var request struct {
+		CategoryID uint64 `json:"category_id" validate:"required"`
+	}
+
+	storeIDParam := c.Param("store_id")
+	storeID, err := strconv.ParseUint(storeIDParam, 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
+	}
+
+	if err = c.Bind(&request); err != nil || request.CategoryID == 0 {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid category ID"})
+	}
+
+	if err = h.storeUseCase.AttachCategoryToStore(storeID, request.CategoryID); err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{"message": "Category attached to store successfully"})
+}
+
+// DetachCategoryFromStore отвязывает категорию от магазина
+func (h *StoreHandler) DetachCategoryFromStore(c echo.Context) error {
+	storeIDParam := c.Param("store_id")
+	storeID, err := strconv.ParseUint(storeIDParam, 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
+	}
+
+	categoryIDParam := c.Param("category_id")
+	categoryID, err := strconv.ParseUint(categoryIDParam, 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
+	}
+
+	if err = h.storeUseCase.DetachCategoryFromStore(storeID, categoryID); err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}

@@ -8,12 +8,19 @@ import (
 
 // StoreUseCase реализует интерфейс StoreUseCase
 type StoreUseCase struct {
-	storeRepo repository.StoreRepository
+	storeRepo    repository.StoreRepository
+	categoryRepo repository.CategoryRepository
 }
 
 // NewStoreUseCase создает новый экземпляр StoreUseCase
-func NewStoreUseCase(storeRepo repository.StoreRepository) *StoreUseCase {
-	return &StoreUseCase{storeRepo: storeRepo}
+func NewStoreUseCase(
+	storeRepo repository.StoreRepository,
+	categoryRepo repository.CategoryRepository,
+) *StoreUseCase {
+	return &StoreUseCase{
+		storeRepo:    storeRepo,
+		categoryRepo: categoryRepo,
+	}
 }
 
 // CreateStore создает новый магазин
@@ -49,4 +56,34 @@ func (s *StoreUseCase) IsUserStoreAdmin(storeID uint64, uid uint64) (bool, error
 	}
 
 	return s.storeRepo.IsUserStoreAdmin(storeID, uid)
+}
+
+// AttachCategoryToStore добавляет категорию к магазину
+func (s *StoreUseCase) AttachCategoryToStore(storeID, categoryID uint64) error {
+	categoryExist, err := s.categoryRepo.IsExist(categoryID)
+	if err != nil || !categoryExist {
+		return errors.New("category not found")
+	}
+
+	isAttached, err := s.storeRepo.IsCategoryAttached(storeID, categoryID)
+	if err != nil || isAttached {
+		return errors.New("category is attached to store")
+	}
+
+	return s.storeRepo.AttachCategory(storeID, categoryID)
+}
+
+// DetachCategoryFromStore открепляет категорию от магазина
+func (s *StoreUseCase) DetachCategoryFromStore(storeID, categoryID uint64) error {
+	categoryExist, err := s.categoryRepo.IsExist(categoryID)
+	if err != nil || !categoryExist {
+		return errors.New("category not found")
+	}
+
+	isAttached, err := s.storeRepo.IsCategoryAttached(storeID, categoryID)
+	if err != nil || !isAttached {
+		return errors.New("category is not attached to store")
+	}
+
+	return s.storeRepo.DetachCategory(storeID, categoryID)
 }
