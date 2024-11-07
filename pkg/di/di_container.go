@@ -124,52 +124,63 @@ func RegisterMiddleware(container *dig.Container, e *echo.Echo) error {
 }
 
 func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
-	// Инициализация HTTP-хэндлеров
+	// Инициализация HTTP-хэндлеров и use cases
 	var userHandler *handlers.UserHandler
 	var productHandler *handlers.ProductHandler
 	var storeHandler *handlers.StoreHandler
 	var categoryHandler *handlers.CategoryHandler
+	var storeUseCase *storeUsecase.StoreUseCase
 
-	// Получаем хэндлеры через контейнер
+	// Получаем хэндлеры и use case через контейнер
 	if err := container.Invoke(func(
 		uh *handlers.UserHandler,
 		ph *handlers.ProductHandler,
 		sh *handlers.StoreHandler,
-		ch *handlers.CategoryHandler) {
+		ch *handlers.CategoryHandler,
+		su *storeUsecase.StoreUseCase) {
 		userHandler = uh
 		productHandler = ph
 		storeHandler = sh
 		categoryHandler = ch
+		storeUseCase = su
 	}); err != nil {
-		fmt.Print("Failed to invoke handlers: %v\n", err)
+		fmt.Printf("Failed to invoke handlers or use case: %v\n", err)
 		return err
 	}
 
+	// Основной скоуп для авторизованных юзеров
 	authorizedScope := e.Group("")
 	authorizedScope.Use(middleware.JWTMiddleware)
+
+	// Скоуп для админов сторов
+	storeAdminScope := authorizedScope.Group("/stores/:store_id")
+	storeAdminScope.Use(middleware.StoreAdminMiddleware(storeUseCase))
 
 	// Регистрация маршрутов для пользователей
 	e.POST("/users", userHandler.Register)
 	e.POST("/users/login", userHandler.Login)
 
 	// Регистрация маршрутов для продуктов
-	authorizedScope.POST("/products", productHandler.CreateProduct)
 	authorizedScope.GET("/products/:id", productHandler.GetProductByID)
 	authorizedScope.GET("/products", productHandler.GetProductsByFilters)
-	authorizedScope.PUT("/products/:id", productHandler.UpdateProduct)
-	authorizedScope.DELETE("/products/:id", productHandler.DeleteProduct)
+	// Добавление продуктов для админов сторов
+	storeAdminScope.POST("/products", productHandler.CreateProduct)
+	storeAdminScope.PUT("/products/:id", productHandler.UpdateProduct)
+	storeAdminScope.DELETE("/products/:id", productHandler.DeleteProduct)
 
 	// Регистрация маршрутов для магазинов
 	authorizedScope.POST("/stores", storeHandler.CreateStore)
-	authorizedScope.GET("/stores/:id", storeHandler.GetStoreByID)
-	authorizedScope.PUT("/stores/:id", storeHandler.UpdateStore)
-	authorizedScope.DELETE("/stores/:id", storeHandler.DeleteStore)
+	authorizedScope.GET("/stores/:store_id", storeHandler.GetStoreByID)
 	authorizedScope.GET("/stores", storeHandler.GetAllStores)
+	// Для админов сторов
+	storeAdminScope.PUT("", storeHandler.UpdateStore)
+	storeAdminScope.DELETE("", storeHandler.DeleteStore)
 	authorizedScope.POST("/stores/:store_id/categories", storeHandler.AddCategoryToStore)
 	authorizedScope.DELETE("/stores/:store_id/categories/:category_id", storeHandler.DeleteCategoryFromStore)
 
 	// Регистрация маршрутов для категорий
 	authorizedScope.POST("/categories", categoryHandler.CreateCategory)
+	authorizedScope.GET("/categories/:id", categoryHandler.GetCategoryByID)
 	authorizedScope.PUT("/categories/:id", categoryHandler.UpdateCategory)
 	authorizedScope.DELETE("/categories/:id", categoryHandler.DeleteCategory)
 	authorizedScope.GET("/stores/:store_id/categories", categoryHandler.GetAllCategoriesByStore)

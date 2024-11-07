@@ -30,6 +30,10 @@ func (c *CategoryUseCase) CreateCategory(category entities.Category, uid uint64)
 	return c.categoryRepo.Save(category)
 }
 
+func (c *CategoryUseCase) GetCategoryByID(id uint64) (entities.Category, error) {
+	return c.categoryRepo.FindByID(id)
+}
+
 func (c *CategoryUseCase) UpdateCategory(category entities.Category, uid uint64) error {
 	userData, err := c.userRepo.FindByID(uid)
 	if err != nil || !userData.IsSeller {

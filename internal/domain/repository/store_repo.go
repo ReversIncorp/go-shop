@@ -5,7 +5,7 @@ import (
 )
 
 type StoreRepository interface {
-	Save(store entities.Store) (uint64, error)
+	Save(store entities.Store, uid uint64) error
 	Update(store entities.Store) error
 	Delete(id uint64) error
 	IsExist(id uint64) (bool, error)
@@ -16,4 +16,7 @@ type StoreRepository interface {
 	AttachCategory(storeID, categoryID uint64) error
 	IsCategoryAttached(storeID, categoryID uint64) (bool, error)
 	DetachCategory(storeID, categoryID uint64) error
+
+	IsUserStoreAdmin(storeID, uid uint64) (bool, error)
+	AddUserStoreAdmin(storeID, uid uint64, owner bool) error
 }

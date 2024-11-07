@@ -36,28 +36,41 @@ func (r *storeRepositoryImpl) IsExist(id uint64) (bool, error) {
 	return true, nil
 }
 
-func (r *storeRepositoryImpl) Save(store entities.Store) (uint64, error) {
+func (r *storeRepositoryImpl) Save(store entities.Store, uid uint64) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
 	store.UpdatedAt = time.Now()
 	store.CreatedAt = time.Now()
 
 	var newStoreID uint64
-	err := r.db.QueryRow(`INSERT INTO stores 
-    (name, 
-     description, 
-     owner_id, 
-     created_at, 
-     updated_at) 
-                         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+	err = tx.QueryRow(`INSERT INTO stores 
+		(name, description, created_at, updated_at) 
+		VALUES ($1, $2, $3, $4) RETURNING id`,
 		store.Name,
 		store.Description,
-		store.OwnerID,
 		store.CreatedAt,
 		store.UpdatedAt).Scan(&newStoreID)
 
 	if err != nil {
-		return 0, err
+		tx.Rollback()
+		return fmt.Errorf("failed to save store: %w", err)
 	}
-	return newStoreID, nil
+
+	_, err = tx.Exec(`INSERT INTO store_roles (store_id, user_id, is_owner) VALUES ($1, $2, $3)`,
+		newStoreID, uid, true)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to add user as store admin: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
 
 func (r *storeRepositoryImpl) FindByID(id uint64) (entities.Store, error) {
@@ -66,14 +79,12 @@ func (r *storeRepositoryImpl) FindByID(id uint64) (entities.Store, error) {
     id,
     name, 
     description,
-    owner_id, 
     created_at, 
     updated_at 
                           FROM stores WHERE id = $1`, id).
 		Scan(&store.ID,
 			&store.Name,
 			&store.Description,
-			&store.OwnerID,
 			&store.CreatedAt,
 			&store.UpdatedAt)
 
@@ -119,7 +130,6 @@ func (r *storeRepositoryImpl) FindAll() ([]entities.Store, error) {
     id, 
     name,
     description,
-    owner_id, 
     created_at, 
     updated_at 
 	FROM stores`)
@@ -135,7 +145,6 @@ func (r *storeRepositoryImpl) FindAll() ([]entities.Store, error) {
 		if err := rows.Scan(&store.ID,
 			&store.Name,
 			&store.Description,
-			&store.OwnerID,
 			&store.CreatedAt,
 			&store.UpdatedAt); err != nil {
 			return nil, err
@@ -175,5 +184,31 @@ func (r *storeRepositoryImpl) DetachCategory(storeID, categoryID uint64) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (r *storeRepositoryImpl) IsUserStoreAdmin(storeID, uid uint64) (bool, error) {
+	var isAdmin bool
+	query := `SELECT EXISTS(SELECT 1 FROM store_roles WHERE store_id = $1 AND user_id = $2)`
+
+	err := r.db.QueryRow(query, storeID, uid).Scan(&isAdmin)
+	if err != nil {
+		return false, fmt.Errorf("failed to check if user is admin: %w", err)
+	}
+
+	return isAdmin, nil
+}
+
+func (r *storeRepositoryImpl) AddUserStoreAdmin(storeID, uid uint64, owner bool) error {
+	query := `INSERT INTO store_roles (
+                         store_id, 
+                         user_id, 
+                         is_owner) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`
+
+	_, err := r.db.Exec(query, storeID, uid, owner)
+	if err != nil {
+		return fmt.Errorf("failed to add user as admin to store: %w", err)
+	}
+
 	return nil
 }
