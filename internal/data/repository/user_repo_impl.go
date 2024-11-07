@@ -5,8 +5,6 @@ import (
 	"errors"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
-
-	"github.com/lib/pq"
 )
 
 type userRepositoryImpl struct {
@@ -17,35 +15,6 @@ func NewUserRepository(db *sql.DB) repository.UserRepository {
 	return &userRepositoryImpl{
 		db: db,
 	}
-}
-
-func (r *userRepositoryImpl) AddOwningStore(userID, storeID uint64) error {
-	_, err := r.db.Exec(`
-		UPDATE users 
-		SET owning_stores = array_append(array_remove(owning_stores, $1), $1) 
-		WHERE id = $2
-	`, storeID, userID)
-	return err
-}
-
-func (r *userRepositoryImpl) IsOwnsStore(userID, storeID uint64) (bool, error) {
-	var owningStores []int64 // Изменение типа для лучшей совместимости
-	err := r.db.QueryRow(
-		"SELECT owning_stores FROM users WHERE id = $1",
-		userID,
-	).Scan(pq.Array(&owningStores))
-
-	if err != nil {
-		return false, err
-	}
-
-	for _, sID := range owningStores {
-		if uint64(sID) == storeID { // Приведение типа при сравнении
-			return true, nil
-		}
-	}
-
-	return false, errors.New("user does not own this store")
 }
 
 func (r *userRepositoryImpl) Create(user entities.User) error {

@@ -22,7 +22,7 @@ func (c *CategoryUseCase) CreateCategory(category entities.Category, uid uint64)
 		return errors.New("store not found")
 	}
 
-	isOwner, err := c.userRepo.IsOwnsStore(uid, category.StoreID)
+	isOwner, err := c.storeRepo.IsUserStoreAdmin(category.StoreID, uid)
 	if err != nil || !isOwner {
 		return errors.New("user does not owning this store")
 	}
@@ -45,7 +45,7 @@ func (c *CategoryUseCase) UpdateCategory(category entities.Category, uid uint64)
 		return errors.New("store not found")
 	}
 
-	isOwner, err := c.userRepo.IsOwnsStore(uid, category.StoreID)
+	isOwner, err := c.storeRepo.IsUserStoreAdmin(category.StoreID, uid)
 	if err != nil || !isOwner {
 		return errors.New("user does not owning this store")
 	}
@@ -59,7 +59,7 @@ func (c *CategoryUseCase) DeleteCategory(id, uid uint64) error {
 		return errors.New("category not found")
 	}
 
-	isOwner, err := c.userRepo.IsOwnsStore(uid, category.StoreID)
+	isOwner, err := c.storeRepo.IsUserStoreAdmin(category.StoreID, uid)
 	if err != nil || !isOwner {
 		return errors.New("user does not owning this store")
 	}

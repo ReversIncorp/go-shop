@@ -176,7 +176,7 @@ func (r *productRepositoryImpl) FindProductsByParams(params entities.ProductSear
 
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("error executing query: %v", err)
+		return nil, fmt.Errorf("error executing query: %w", err)
 	}
 	defer rows.Close()
 
@@ -193,14 +193,30 @@ func (r *productRepositoryImpl) FindProductsByParams(params entities.ProductSear
 			&product.StoreID,
 			&product.CreatedAt,
 			&product.UpdatedAt); err != nil {
-			return nil, fmt.Errorf("error scanning row: %v", err)
+			return nil, fmt.Errorf("error scanning row: %w", err)
 		}
 		products = append(products, product)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error during rows iteration: %v", err)
+		return nil, fmt.Errorf("error during rows iteration: %w", err)
 	}
 
 	return products, nil
+}
+
+func (r *productRepositoryImpl) IsProductBelongsToStore(productID, storeID uint64) (bool, error) {
+	var exists bool
+	query := `SELECT EXISTS(
+		SELECT 1 
+		FROM products 
+		WHERE id = $1 AND store_id = $2
+	)`
+
+	err := r.db.QueryRow(query, productID, storeID).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check product ownership: %w", err)
+	}
+
+	return exists, nil
 }
