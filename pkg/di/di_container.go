@@ -172,17 +172,17 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	authorizedScope.POST("/stores", storeHandler.CreateStore)
 	authorizedScope.GET("/stores/:store_id", storeHandler.GetStoreByID)
 	authorizedScope.GET("/stores", storeHandler.GetAllStores)
+	authorizedScope.GET("/stores/:store_id/categories", categoryHandler.GetAllCategoriesByStore)
 	// Для админов сторов
 	storeAdminScope.PUT("", storeHandler.UpdateStore)
 	storeAdminScope.DELETE("", storeHandler.DeleteStore)
-	authorizedScope.POST("/stores/:store_id/categories", storeHandler.AddCategoryToStore)
-	authorizedScope.DELETE("/stores/:store_id/categories/:category_id", storeHandler.DeleteCategoryFromStore)
+	storeAdminScope.POST("/categories", storeHandler.AttachCategoryToStore)
+	storeAdminScope.DELETE("/categories/:category_id", storeHandler.DetachCategoryFromStore)
 
 	// Регистрация маршрутов для категорий
 	authorizedScope.POST("/categories", categoryHandler.CreateCategory)
 	authorizedScope.GET("/categories/:id", categoryHandler.GetCategoryByID)
-	authorizedScope.PUT("/categories/:id", categoryHandler.UpdateCategory)
+	authorizedScope.GET("/categories", categoryHandler.GetAllCategories)
 	authorizedScope.DELETE("/categories/:id", categoryHandler.DeleteCategory)
-	authorizedScope.GET("/stores/:store_id/categories", categoryHandler.GetAllCategoriesByStore)
 	return nil
 }

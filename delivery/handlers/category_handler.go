@@ -40,34 +40,6 @@ func (h *CategoryHandler) CreateCategory(c echo.Context) error {
 
 }
 
-// UpdateCategory обрабатывает запрос на обновление категории
-func (h *CategoryHandler) UpdateCategory(c echo.Context) error {
-	var category entities.Category
-
-	id := c.Param("id")
-	categoryID, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid category ID"})
-	}
-
-	if err = c.Bind(&category); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
-	}
-
-	category.ID = categoryID
-
-	userID := c.Get("user_id")
-	uid, ok := userID.(float64)
-	if !ok || userID == nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid or missing user_id from token"})
-	}
-
-	if err = h.categoryUseCase.UpdateCategory(category, uint64(uid)); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
-	}
-	return c.JSON(http.StatusOK, category)
-}
-
 // DeleteCategory обрабатывает запрос на удаление категории
 func (h *CategoryHandler) DeleteCategory(c echo.Context) error {
 	id := c.Param("id")
@@ -102,4 +74,30 @@ func (h *CategoryHandler) GetAllCategoriesByStore(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, categories)
+}
+
+// GetCategoryByID обрабатывает запрос на получение категории по айди
+func (h *CategoryHandler) GetCategoryByID(c echo.Context) error {
+	id := c.Param("id")
+	uint64ID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid category ID"})
+	}
+
+	category, err := h.categoryUseCase.GetCategoryByID(uint64ID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, category)
+}
+
+// GetAllCategories обрабатывает запрос на получение всех категорий
+func (h *CategoryHandler) GetAllCategories(c echo.Context) error {
+	category, err := h.categoryUseCase.GetAllCategories()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, category)
 }

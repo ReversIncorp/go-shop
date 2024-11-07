@@ -101,8 +101,8 @@ func (h *StoreHandler) GetAllStores(c echo.Context) error {
 	return c.JSON(http.StatusOK, stores)
 }
 
-// AddCategoryToStore связывает категорию с магазином
-func (h *StoreHandler) AddCategoryToStore(c echo.Context) error {
+// AttachCategoryToStore связывает категорию с магазином
+func (h *StoreHandler) AttachCategoryToStore(c echo.Context) error {
 	var request struct {
 		CategoryID uint64 `json:"category_id" validate:"required"`
 	}
@@ -117,21 +117,15 @@ func (h *StoreHandler) AddCategoryToStore(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid category ID"})
 	}
 
-	userID := c.Get("user_id")
-	uid, ok := userID.(float64)
-	if !ok || userID == nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid or missing user_id from token"})
-	}
-
-	if err = h.storeUseCase.AttachCategoryToStore(storeID, request.CategoryID, uint64(uid)); err != nil {
+	if err = h.storeUseCase.AttachCategoryToStore(storeID, request.CategoryID); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{"message": "Category added to store successfully"})
+	return c.JSON(http.StatusOK, echo.Map{"message": "Category attached to store successfully"})
 }
 
-// DeleteCategoryFromStore отвязывает категорию от магазина
-func (h *StoreHandler) DeleteCategoryFromStore(c echo.Context) error {
+// DetachCategoryFromStore отвязывает категорию от магазина
+func (h *StoreHandler) DetachCategoryFromStore(c echo.Context) error {
 	storeIDParam := c.Param("store_id")
 	storeID, err := strconv.ParseUint(storeIDParam, 10, 64)
 	if err != nil {
@@ -144,13 +138,7 @@ func (h *StoreHandler) DeleteCategoryFromStore(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
 	}
 
-	userID := c.Get("user_id")
-	uid, ok := userID.(float64)
-	if !ok || userID == nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid or missing user_id from token"})
-	}
-
-	if err = h.storeUseCase.DetachCategoryFromStore(storeID, categoryID, uint64(uid)); err != nil {
+	if err = h.storeUseCase.DetachCategoryFromStore(storeID, categoryID); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
 

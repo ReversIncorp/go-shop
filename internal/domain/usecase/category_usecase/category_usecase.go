@@ -34,20 +34,6 @@ func (c *CategoryUseCase) GetCategoryByID(id uint64) (entities.Category, error) 
 	return c.categoryRepo.FindByID(id)
 }
 
-func (c *CategoryUseCase) UpdateCategory(category entities.Category, uid uint64) error {
-	userData, err := c.userRepo.FindByID(uid)
-	if err != nil || !userData.IsSeller {
-		return errors.New("user is not seller")
-	}
-
-	categoryExists, err := c.categoryRepo.IsExist(category.ID)
-	if err != nil || !categoryExists {
-		return errors.New("category not found")
-	}
-
-	return c.categoryRepo.Update(category)
-}
-
 func (c *CategoryUseCase) DeleteCategory(id, uid uint64) error {
 	userData, err := c.userRepo.FindByID(uid)
 	if err != nil || !userData.IsSeller {
@@ -59,4 +45,8 @@ func (c *CategoryUseCase) DeleteCategory(id, uid uint64) error {
 
 func (c *CategoryUseCase) GetAllCategoriesByStore(id uint64) ([]entities.Category, error) {
 	return c.categoryRepo.FindAllByStore(id)
+}
+
+func (c *CategoryUseCase) GetAllCategories() ([]entities.Category, error) {
+	return c.categoryRepo.FindAll()
 }
