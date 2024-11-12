@@ -3,6 +3,7 @@ package handlers
 import (
 	"marketplace/internal/domain/entities"
 	productUsecas "marketplace/internal/domain/usecase/product_usecase"
+	"marketplace/pkg/errors"
 	"net/http"
 	"strconv"
 
@@ -22,21 +23,20 @@ func NewProductHandler(productUseCase *productUsecas.ProductUseCase) *ProductHan
 // CreateProduct обрабатывает запрос на создание продукта.
 func (h *ProductHandler) CreateProduct(c echo.Context) error {
 	var product entities.Product
-
 	if err := c.Bind(&product); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
+		return errors.ErrInvalidInput
 	}
 
 	id := c.Param("store_id")
 	storeID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err.Error())
+		return errors.ErrInvalidInput
 	}
 
 	product.StoreID = storeID
 
-	if err := h.productUseCase.CreateProduct(product); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+	if err = h.productUseCase.CreateProduct(product); err != nil {
+		return err
 	}
 	return c.JSON(http.StatusCreated, product)
 }
@@ -46,11 +46,11 @@ func (h *ProductHandler) GetProductByID(c echo.Context) error {
 	id := c.Param("id")
 	productID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err.Error())
+		return errors.ErrInvalidInput
 	}
 	product, err := h.productUseCase.GetProductByID(productID)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
+		return errors.ErrInternalServerError
 	}
 
 	return c.JSON(http.StatusOK, product)
@@ -63,24 +63,24 @@ func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 	id := c.Param("id")
 	productID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err.Error())
+		return errors.ErrInvalidInput
 	}
 
 	sid := c.Param("store_id")
 	storeID, err := strconv.ParseUint(sid, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err.Error())
+		return errors.ErrInvalidInput
 	}
 
 	if err = c.Bind(&product); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
+		return errors.ErrInvalidInput
 	}
 
 	product.StoreID = storeID
 	product.ID = productID
 
 	if err = h.productUseCase.UpdateProduct(product); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+		return err
 	}
 
 	return c.JSON(http.StatusOK, product)
@@ -91,11 +91,11 @@ func (h *ProductHandler) DeleteProduct(c echo.Context) error {
 	id := c.Param("id")
 	productID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err.Error())
+		return errors.ErrInvalidInput
 	}
 
 	if err = h.productUseCase.DeleteProduct(productID); err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
+		return err
 	}
 	return c.NoContent(http.StatusNoContent)
 }
@@ -104,12 +104,12 @@ func (h *ProductHandler) GetProductsByFilters(c echo.Context) error {
 	var searchParams entities.ProductSearchParams
 
 	if err := c.Bind(&searchParams); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
+		return errors.ErrInvalidInput
 	}
 
 	products, err := h.productUseCase.GetProductsByFilters(searchParams)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+		return errors.ErrInternalServerError
 	}
 
 	return c.JSON(http.StatusOK, products)

@@ -3,6 +3,7 @@ package handlers
 import (
 	"marketplace/internal/domain/entities"
 	storeUsecases "marketplace/internal/domain/usecase/store_usecase"
+	"marketplace/pkg/errors"
 	"net/http"
 	"strconv"
 
@@ -24,17 +25,17 @@ func (h *StoreHandler) CreateStore(c echo.Context) error {
 	var store entities.Store
 
 	if err := c.Bind(&store); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
+		return errors.ErrInvalidInput
 	}
 
 	userID := c.Get("user_id")
 	uid, ok := userID.(float64)
 	if !ok || userID == nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid or missing user_id from token"})
+		return errors.ErrMissingUserFromToken
 	}
 
 	if err := h.storeUseCase.CreateStore(store, uint64(uid)); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+		return errors.ErrInternalServerError
 	}
 
 	return c.JSON(http.StatusCreated, store)
@@ -45,11 +46,11 @@ func (h *StoreHandler) GetStoreByID(c echo.Context) error {
 	id := c.Param("store_id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err.Error())
+		return errors.ErrInvalidInput
 	}
 	store, err := h.storeUseCase.GetStoreByID(uint64ID)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
+		return errors.ErrStoreNotFound
 	}
 
 	return c.JSON(http.StatusOK, store)
@@ -61,17 +62,17 @@ func (h *StoreHandler) UpdateStore(c echo.Context) error {
 	id := c.Param("store_id")
 	storeID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
+		return errors.ErrInvalidInput
 	}
 
 	if err = c.Bind(&store); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
+		return errors.ErrInvalidInput
 	}
 
 	store.ID = storeID
 
 	if err = h.storeUseCase.UpdateStore(store); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+		return errors.ErrInternalServerError
 	}
 
 	return c.JSON(http.StatusOK, store)
@@ -82,11 +83,11 @@ func (h *StoreHandler) DeleteStore(c echo.Context) error {
 	id := c.Param("store_id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
+		return errors.ErrInvalidInput
 	}
 
 	if err = h.storeUseCase.DeleteStore(uint64ID); err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
+		return err
 	}
 	return c.NoContent(http.StatusNoContent)
 }
@@ -95,7 +96,7 @@ func (h *StoreHandler) DeleteStore(c echo.Context) error {
 func (h *StoreHandler) GetAllStores(c echo.Context) error {
 	stores, err := h.storeUseCase.GetAllStores()
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+		return errors.ErrInternalServerError
 	}
 
 	return c.JSON(http.StatusOK, stores)
@@ -110,15 +111,15 @@ func (h *StoreHandler) AttachCategoryToStore(c echo.Context) error {
 	storeIDParam := c.Param("store_id")
 	storeID, err := strconv.ParseUint(storeIDParam, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
+		return errors.ErrInvalidInput
 	}
 
 	if err = c.Bind(&request); err != nil || request.CategoryID == 0 {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid category ID"})
+		return errors.ErrInvalidInput
 	}
 
 	if err = h.storeUseCase.AttachCategoryToStore(storeID, request.CategoryID); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+		return err
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{"message": "Category attached to store successfully"})
@@ -129,17 +130,17 @@ func (h *StoreHandler) DetachCategoryFromStore(c echo.Context) error {
 	storeIDParam := c.Param("store_id")
 	storeID, err := strconv.ParseUint(storeIDParam, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
+		return errors.ErrInvalidInput
 	}
 
 	categoryIDParam := c.Param("category_id")
 	categoryID, err := strconv.ParseUint(categoryIDParam, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
+		return errors.ErrInvalidInput
 	}
 
 	if err = h.storeUseCase.DetachCategoryFromStore(storeID, categoryID); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+		return err
 	}
 
 	return c.NoContent(http.StatusNoContent)

@@ -148,8 +148,12 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 		return err
 	}
 
+	// Первичный скоуп, на который вешаем миддлвейр для хендла ошибок и возможно другие общие вещи.
+	mainScope := e.Group("")
+	mainScope.Use(middleware.ErrorHandlerMiddleware)
+
 	// Основной скоуп для авторизованных юзеров
-	authorizedScope := e.Group("")
+	authorizedScope := mainScope.Group("")
 	authorizedScope.Use(middleware.JWTMiddleware)
 
 	// Скоуп для админов сторов
@@ -157,13 +161,12 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	storeAdminScope.Use(middleware.StoreAdminMiddleware(storeUseCase))
 
 	// Регистрация маршрутов для пользователей
-	e.POST("/users", userHandler.Register)
-	e.POST("/users/login", userHandler.Login)
+	mainScope.POST("/users", userHandler.Register)
+	mainScope.POST("/users/login", userHandler.Login)
 
 	// Регистрация маршрутов для продуктов
 	authorizedScope.GET("/products/:id", productHandler.GetProductByID)
 	authorizedScope.GET("/products", productHandler.GetProductsByFilters)
-	// Добавление продуктов для админов сторов
 	storeAdminScope.POST("/products", productHandler.CreateProduct)
 	storeAdminScope.PUT("/products/:id", productHandler.UpdateProduct)
 	storeAdminScope.DELETE("/products/:id", productHandler.DeleteProduct)
@@ -173,7 +176,6 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	authorizedScope.GET("/stores/:store_id", storeHandler.GetStoreByID)
 	authorizedScope.GET("/stores", storeHandler.GetAllStores)
 	authorizedScope.GET("/stores/:store_id/categories", categoryHandler.GetAllCategoriesByStore)
-	// Для админов сторов
 	storeAdminScope.PUT("", storeHandler.UpdateStore)
 	storeAdminScope.DELETE("", storeHandler.DeleteStore)
 	storeAdminScope.POST("/categories", storeHandler.AttachCategoryToStore)

@@ -1,11 +1,11 @@
 package userUsecase
 
 import (
-	"errors"
 	"marketplace/config"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/enums"
 	"marketplace/internal/domain/repository"
+	errorResponses "marketplace/pkg/errors"
 
 	"github.com/labstack/echo/v4"
 )
@@ -24,16 +24,17 @@ func NewUserUseCase(userRepo repository.UserRepository, tokenRepo repository.JWT
 func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.Tokens, error) {
 	existingUser, err := u.userRepo.FindByEmail(user.Email)
 	if err == nil && existingUser.ID != 0 {
-		return nil, errors.New("user already exists")
+		return nil, errorResponses.ErrUserExists
 	}
 
 	// Сохраняем пользователя в репозиторий
-	if err := u.userRepo.Create(user); err != nil {
-		return nil, err
+	if err = u.userRepo.Create(user); err != nil {
+		return nil, errorResponses.ErrInternalServerError
 	}
+
 	tokens, err := u.createTokens(user.ID, ctx)
 	if err != nil {
-		return nil, err
+		return nil, errorResponses.ErrInternalServerError
 	}
 	return tokens, nil
 }
@@ -42,12 +43,12 @@ func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.
 func (u *UserUseCase) Login(email, password string, ctx echo.Context) (*entities.Tokens, error) {
 	user, err := u.userRepo.FindByEmail(email)
 	if err != nil || user.Password != password { // Здесь должна быть логика хэширования пароля
-		return nil, errors.New("invalid credentials")
+		return nil, errorResponses.ErrInvalidCredentials
 	}
 
 	tokens, err := u.createTokens(user.ID, ctx)
 	if err != nil {
-		return nil, err
+		return nil, errorResponses.ErrInternalServerError
 	}
 
 	return tokens, nil

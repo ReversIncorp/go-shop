@@ -3,6 +3,7 @@ package handlers
 import (
 	"marketplace/internal/domain/entities"
 	userUsecase "marketplace/internal/domain/usecase/user_ucecase"
+	"marketplace/pkg/errors"
 	"net/http"
 	"strconv"
 
@@ -26,16 +27,16 @@ func (h *UserHandler) Register(c echo.Context) error {
 	var user entities.User
 
 	if err := c.Bind(&user); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
+		return errors.ErrInvalidInput
 	}
 	if err := h.validator.Struct(user); err != nil {
-		return c.JSON(http.StatusBadRequest, err.Error())
+		return errors.ErrValidationFailed
 	}
 
 	// Вызов метода Register и получение токенов
 	tokens, err := h.userUseCase.Register(user, c)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+		return err
 	}
 
 	// Возвращаем информацию о пользователе и токенах
@@ -46,16 +47,16 @@ func (h *UserHandler) Register(c echo.Context) error {
 func (h *UserHandler) Login(c echo.Context) error {
 	var credentials entities.LoginCredentials
 	if err := c.Bind(&credentials); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
+		return errors.ErrInvalidInput
 	}
 	if err := h.validator.Struct(credentials); err != nil {
-		return c.JSON(http.StatusBadRequest, err.Error())
+		return errors.ErrValidationFailed
 	}
 
 	// Вызов метода Login и получение токенов
 	tokens, err := h.userUseCase.Login(credentials.Email, credentials.Password, c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, echo.Map{"error": err.Error()})
+		return err
 	}
 
 	// Возвращаем токены
@@ -67,11 +68,11 @@ func (h *UserHandler) GetUserByID(c echo.Context) error {
 	id := c.Param("id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, err.Error())
+		return errors.ErrInvalidInput
 	}
 	user, err := h.userUseCase.GetUserByID(uint64ID)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
+		return errors.ErrUserNotFound
 	}
 
 	return c.JSON(http.StatusOK, user)
@@ -82,11 +83,11 @@ func (h *UserHandler) UpdateToken(c echo.Context) error {
 	id := c.Param("id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, err.Error())
+		return errors.ErrInvalidInput
 	}
 	user, err := h.userUseCase.GetUserByID(uint64ID)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
+		return errors.ErrUserNotFound
 	}
 
 	return c.JSON(http.StatusOK, user)
