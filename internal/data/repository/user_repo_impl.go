@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
 )
@@ -17,12 +18,14 @@ func NewUserRepository(db *sql.DB) repository.UserRepository {
 	}
 }
 
-func (r *userRepositoryImpl) Create(user entities.User) error {
-	var existingUser entities.User
-	query := `SELECT id, email FROM users WHERE email = $1`
-	err := r.db.QueryRow(query, user.Email).Scan(&existingUser.ID, &existingUser.Email)
+func (r *userRepositoryImpl) Create(user entities.User) (uint64, error) {
+	var existingUserID uint64
+	query := `SELECT id FROM users WHERE email = $1`
+	err := r.db.QueryRow(query, user.Email).Scan(&existingUserID)
 	if err == nil {
-		return errors.New("user already exists")
+		return 0, errors.New("user already exists")
+	} else if err != sql.ErrNoRows {
+		return 0, fmt.Errorf("failed to check existing user: %w", err)
 	}
 
 	insertQuery := `INSERT INTO users 
@@ -30,18 +33,19 @@ func (r *userRepositoryImpl) Create(user entities.User) error {
      email, 
      password, 
      is_seller) 
-	                VALUES ($1, $2, $3, $4) RETURNING id`
+	VALUES ($1, $2, $3, $4) RETURNING id`
+	var newUserID uint64
 	err = r.db.QueryRow(insertQuery,
 		user.Name,
 		user.Email,
 		user.Password,
-		user.IsSeller).Scan(&user.ID)
+		user.IsSeller).Scan(&newUserID)
 
 	if err != nil {
-		return err
+		return 0, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	return nil
+	return newUserID, nil
 }
 
 func (r *userRepositoryImpl) FindByEmail(email string) (entities.User, error) {

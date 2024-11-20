@@ -28,13 +28,16 @@ func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.
 	}
 
 	// Сохраняем пользователя в репозиторий
-	if err := u.userRepo.Create(user); err != nil {
-		return nil, err
-	}
-	tokens, err := u.createTokens(user.ID, ctx)
+	userID, err := u.userRepo.Create(user)
 	if err != nil {
 		return nil, err
 	}
+
+	tokens, err := u.createTokens(userID, ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return tokens, nil
 }
 
