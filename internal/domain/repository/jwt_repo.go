@@ -2,13 +2,11 @@ package repository
 
 import (
 	"marketplace/internal/domain/entities"
-	"marketplace/internal/domain/enums"
-
-	"github.com/labstack/echo/v4"
 )
 
 type JWTRepository interface {
-	SaveToken(userID uint64, token *entities.TokenDetails, tokenType enums.Token, ctx echo.Context) error
-	GetToken(userID uint64, tokenType enums.Token, ctx echo.Context) (*entities.TokenDetails, error)
-	DeleteToken(userID uint64, tokenType enums.Token, ctx echo.Context) error
+	SaveSession(userID uint64, sessionID string, session *entities.SessionDetails) error
+	GetSession(userID uint64, sessionID string) (*entities.SessionDetails, error)
+	GetAllSessions(userID uint64) (map[string]*entities.SessionDetails, error)
+	DeleteSession(userID uint64, sessionID string) error
 }
