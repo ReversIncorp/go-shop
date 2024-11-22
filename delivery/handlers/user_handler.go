@@ -77,17 +77,19 @@ func (h *UserHandler) GetUserByID(c echo.Context) error {
 	return c.JSON(http.StatusOK, user)
 }
 
-// UpdateToken обрабатывает запрос на получение информации о пользователе по ID
-func (h *UserHandler) UpdateToken(c echo.Context) error {
-	id := c.Param("id")
-	uint64ID, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, err.Error())
-	}
-	user, err := h.userUseCase.GetUserByID(uint64ID)
-	if err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
+// RefreshSession обрабатывает рефреш сессии по рефреш токену.
+func (h *UserHandler) RefreshSession(c echo.Context) error {
+	var request struct {
+		Token string `json:"refresh_token" validate:"required"`
 	}
 
-	return c.JSON(http.StatusOK, user)
+	if err := c.Bind(&request); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid refresh token"})
+	}
+
+	session, err := h.userUseCase.UpdateSession(request.Token, c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid refresh token"})
+	}
+	return c.JSON(http.StatusOK, session.CleanOutput())
 }

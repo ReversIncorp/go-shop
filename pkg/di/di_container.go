@@ -162,6 +162,7 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	// Регистрация маршрутов для пользователей
 	e.POST("/users", userHandler.Register)
 	e.POST("/users/login", userHandler.Login)
+	e.POST("/users/refresh-session", userHandler.RefreshSession)
 
 	// Регистрация маршрутов для продуктов
 	authorizedScope.GET("/products/:id", productHandler.GetProductByID)

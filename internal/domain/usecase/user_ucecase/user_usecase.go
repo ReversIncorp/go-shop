@@ -37,7 +37,7 @@ func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.
 		return nil, err
 	}
 
-	tokens, err := u.createSession(userID, ctx)
+	tokens, err := u.createSession(userID, uuid.New().String(), ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (u *UserUseCase) Login(email, password string, ctx echo.Context) (*entities
 		return nil, errors.New("invalid credentials")
 	}
 
-	tokens, err := u.createSession(user.ID, ctx)
+	tokens, err := u.createSession(user.ID, uuid.New().String(), ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -65,12 +65,37 @@ func (u *UserUseCase) GetUserByID(id uint64) (entities.User, error) {
 	return u.userRepo.FindByID(id)
 }
 
-// UpdateToken Реализация метода GetUserByID
-func (u *UserUseCase) UpdateToken(id uint64) (entities.User, error) {
-	return u.userRepo.FindByID(id)
+func (u *UserUseCase) UpdateSession(refreshToken string, ctx echo.Context) (*entities.SessionDetails, error) {
+	token, err := u.ValidateToken(refreshToken, config.GetConfig().JWTKey, enums.Refresh)
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		userID, ok := claims["user_id"].(float64)
+		if !ok {
+			return nil, fmt.Errorf("invalid token: user_id missing or invalid")
+		}
+		sessionUUID, ok := claims["session_uuid"].(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid token: session UUID missing or invalid")
+		}
+
+		session, err := u.createSession(uint64(userID), sessionUUID, ctx)
+		if err != nil {
+			return nil, fmt.Errorf("session creation failed")
+		}
+		err = u.tokenRepo.SaveSession(uint64(userID), sessionUUID, session)
+		if err != nil {
+			return nil, fmt.Errorf("session saving failed")
+		}
+
+		return session, nil
+	}
+	return nil, errors.New("invalid refresh token")
 }
 
-func (u *UserUseCase) ValidateToken(tokenString string, key []byte) (*jwt.Token, error) {
+func (u *UserUseCase) ValidateToken(tokenString string, key []byte, tokenType enums.Token) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -104,21 +129,29 @@ func (u *UserUseCase) ValidateToken(tokenString string, key []byte) (*jwt.Token,
 		if err != nil {
 			return nil, fmt.Errorf("session not found")
 		}
-		if session.AccessToken != tokenString {
-			return nil, fmt.Errorf("session acess token not equals to user acess token")
+
+		if tokenType == enums.Access {
+			if session.AccessToken != tokenString {
+				return nil, fmt.Errorf("session acess token not equals to user acess token")
+			}
+		} else if tokenType == enums.Refresh {
+			if session.RefreshToken != tokenString {
+				return nil, fmt.Errorf("session refresh token not equals to user refresh token")
+			}
+		} else {
+			return nil, fmt.Errorf("invalid token type")
 		}
 
-		logrus.Infof("User ID from token: %v, Token session UUID: %v", userID, sessionUUID)
+		logrus.Infof("User ID from token: %v, Token session UUID: %v, Token type: %v", userID, sessionUUID, tokenType)
 
 		return token, nil
 	}
 	return nil, errors.New("invalid token")
 }
 
-// RefreshToken Реализация метода RefreshToken
-func (u *UserUseCase) createSession(userID uint64, ctx echo.Context) (*entities.SessionDetails, error) {
+// UpdateSession Реализация метода UpdateSession
+func (u *UserUseCase) createSession(userID uint64, sessionID string, ctx echo.Context) (*entities.SessionDetails, error) {
 	session := &entities.SessionDetails{}
-	sessionID := uuid.New().String()
 	session.DeviceInfo = ctx.Request().Header.Get("User-Agent")
 	session.IPAddress = ctx.RealIP()
 

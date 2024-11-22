@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"marketplace/config"
+	"marketplace/internal/domain/enums"
 	usecase "marketplace/internal/domain/usecase/user_ucecase"
 
 	"net/http"
@@ -30,7 +31,7 @@ func JWTMiddleware(userUseCase *usecase.UserUseCase) echo.MiddlewareFunc {
 			tokenString := tokenParts[1]
 
 			// Проверяем валидность Access токена
-			token, err := userUseCase.ValidateToken(tokenString, config.GetConfig().JWTKey)
+			token, err := userUseCase.ValidateToken(tokenString, config.GetConfig().JWTKey, enums.Access)
 			if err != nil {
 				return c.JSON(http.StatusUnauthorized, echo.Map{"error": "Invalid or expired token"})
 			}
