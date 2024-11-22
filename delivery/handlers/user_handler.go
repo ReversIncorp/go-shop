@@ -93,3 +93,19 @@ func (h *UserHandler) RefreshSession(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, session.CleanOutput())
 }
+
+// Logout обрабатывает логаут сессии по ацесс токену.
+func (h *UserHandler) Logout(c echo.Context) error {
+	var request struct {
+		Token string `json:"access_token" validate:"required"`
+	}
+	if err := c.Bind(&request); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid access token"})
+	}
+
+	err := h.userUseCase.Logout(request.Token)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
+	}
+	return c.NoContent(http.StatusOK)
+}

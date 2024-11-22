@@ -65,6 +65,32 @@ func (u *UserUseCase) GetUserByID(id uint64) (entities.User, error) {
 	return u.userRepo.FindByID(id)
 }
 
+func (u *UserUseCase) Logout(accessToken string) error {
+	token, err := u.ValidateToken(accessToken, config.GetConfig().JWTKey, enums.Access)
+	if err != nil {
+		return err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		userID, ok := claims["user_id"].(float64)
+		if !ok {
+			return fmt.Errorf("invalid token: user_id missing or invalid")
+		}
+		sessionUUID, ok := claims["session_uuid"].(string)
+		if !ok {
+			return fmt.Errorf("invalid token: session UUID missing or invalid")
+		}
+
+		err := u.tokenRepo.DeleteSession(uint64(userID), sessionUUID)
+		if err != nil {
+			return fmt.Errorf("session deletion failed")
+		}
+
+		return nil
+	}
+	return errors.New("invalid access token")
+}
+
 func (u *UserUseCase) UpdateSession(refreshToken string, ctx echo.Context) (*entities.SessionDetails, error) {
 	token, err := u.ValidateToken(refreshToken, config.GetConfig().JWTKey, enums.Refresh)
 	if err != nil {
