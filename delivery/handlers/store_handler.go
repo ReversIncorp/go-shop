@@ -6,17 +6,25 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 )
 
 // StoreHandler обрабатывает HTTP-запросы для магазинов
 type StoreHandler struct {
 	storeUseCase *storeUsecases.StoreUseCase
+	validator    *validator.Validate
 }
 
 // NewStoreHandler создает новый экземпляр StoreHandler
-func NewStoreHandler(storeUseCase *storeUsecases.StoreUseCase) *StoreHandler {
-	return &StoreHandler{storeUseCase: storeUseCase}
+func NewStoreHandler(
+	storeUseCase *storeUsecases.StoreUseCase,
+	validator *validator.Validate,
+) *StoreHandler {
+	return &StoreHandler{
+		storeUseCase: storeUseCase,
+		validator:    validator,
+	}
 }
 
 // CreateStore обрабатывает запрос на создание магазина
@@ -91,14 +99,27 @@ func (h *StoreHandler) DeleteStore(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-// GetAllStores обрабатывает запрос на получение всех магазинов
-func (h *StoreHandler) GetAllStores(c echo.Context) error {
-	stores, err := h.storeUseCase.GetAllStores()
+// GetStoresByFilters обрабатывает запрос на получение магазинов по фильтрам
+func (h *StoreHandler) GetStoresByFilters(c echo.Context) error {
+	var searchParams entities.StoreSearchParams
+
+	if err := c.Bind(&searchParams); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
+	}
+	if err := h.validator.Struct(searchParams); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Input validation failed"})
+	}
+
+	products, nextCursor, err := h.storeUseCase.GetStoresByFilters(searchParams)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
 
-	return c.JSON(http.StatusOK, stores)
+	return c.JSON(http.StatusOK, echo.Map{
+		"data":       products,
+		"limit":      searchParams.Limit,
+		"nextCursor": nextCursor,
+	})
 }
 
 // AttachCategoryToStore связывает категорию с магазином
