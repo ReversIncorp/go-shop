@@ -128,7 +128,7 @@ func (r *productRepositoryImpl) Delete(id uint64) error {
 	return nil
 }
 
-func (r *productRepositoryImpl) FindProductsByParams(params entities.ProductSearchParams) ([]entities.Product, error) {
+func (r *productRepositoryImpl) FindProductsByParams(params entities.ProductSearchParams) ([]entities.Product, *uint64, error) {
 	query := `SELECT 
     id, 
     name,
@@ -144,6 +144,7 @@ func (r *productRepositoryImpl) FindProductsByParams(params entities.ProductSear
 	var conditions []string
 	var args []interface{}
 
+	// Фильтры по параметрам
 	if params.StoreID != nil {
 		conditions = append(conditions, fmt.Sprintf("store_id = $%d", len(args)+1))
 		args = append(args, *params.StoreID)
@@ -169,18 +170,35 @@ func (r *productRepositoryImpl) FindProductsByParams(params entities.ProductSear
 		args = append(args, "%"+*params.Name+"%")
 	}
 
-	// Добавляем условия, если они есть
+	// Курсор для пагинации
+	if params.Cursor != nil {
+		conditions = append(conditions, fmt.Sprintf("id > $%d", len(args)+1))
+		args = append(args, *params.Cursor)
+	}
+
+	// Добавляем условия в запрос
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
+	// Сортировка по ID для правильной работы курсора
+	query += " ORDER BY id ASC"
+
+	// Лимит результатов
+	if params.Limit != nil {
+		query += fmt.Sprintf(" LIMIT $%d", len(args)+1)
+		args = append(args, *params.Limit)
+	}
+
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("error executing query: %w", err)
+		return nil, nil, fmt.Errorf("error executing query: %w", err)
 	}
 	defer rows.Close()
 
+	// Обработка результатов
 	var products []entities.Product
+	var lastID uint64
 	for rows.Next() {
 		var product entities.Product
 		if err := rows.Scan(
@@ -193,16 +211,23 @@ func (r *productRepositoryImpl) FindProductsByParams(params entities.ProductSear
 			&product.StoreID,
 			&product.CreatedAt,
 			&product.UpdatedAt); err != nil {
-			return nil, fmt.Errorf("error scanning row: %w", err)
+			return nil, nil, fmt.Errorf("error scanning row: %w", err)
 		}
 		products = append(products, product)
+		lastID = product.ID
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error during rows iteration: %w", err)
+		return nil, nil, fmt.Errorf("error during rows iteration: %w", err)
 	}
 
-	return products, nil
+	// Если данных меньше, чем лимит, значит следующего курсора нет
+	if params.Limit != nil && uint64(len(products)) < *params.Limit {
+		return products, nil, nil
+	}
+
+	// Возвращаем данные и курсор
+	return products, &lastID, nil
 }
 
 func (r *productRepositoryImpl) IsProductBelongsToStore(productID, storeID uint64) (bool, error) {

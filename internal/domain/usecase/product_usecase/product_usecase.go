@@ -69,6 +69,6 @@ func (p *ProductUseCase) DeleteProduct(id uint64) error {
 }
 
 // GetProductsByFilters получает все продукты по фильтрам
-func (p *ProductUseCase) GetProductsByFilters(filters entities.ProductSearchParams) ([]entities.Product, error) {
+func (p *ProductUseCase) GetProductsByFilters(filters entities.ProductSearchParams) ([]entities.Product, *uint64, error) {
 	return p.productRepo.FindProductsByParams(filters)
 }
