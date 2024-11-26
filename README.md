@@ -51,3 +51,55 @@
 # Стэк технологий 
 - DI - Uber Dig
 - Logging - Logrus
+- PostgreSQL migrations - Goose 
+
+# CLI Commands
+## Миграции
+
+- #### Применить все миграции
+    Применяет все недостающие миграции, начиная с текущей версии базы данных.
+```bash
+goose -dir pkg/database/migrations postgres "host=localhost port=5432 user=delaverdev password=2553500 dbname=go-shop sslmode=disable" up
+```
+
+- #### Откатить последнюю миграцию 
+     Откатывает последнюю примененную миграцию.
+```bash
+goose -dir pkg/database/migrations postgres "host=localhost port=5432 user=delaverdev password=2553500 dbname=go-shop sslmode=disable" down
+```
+
+- #### Откатить все миграции
+    Возвращает базу данных в исходное состояние, удаляя все миграции.
+```bash
+goose -dir pkg/database/migrations postgres "host=localhost port=5432 user=delaverdev password=2553500 dbname=go-shop sslmode=disable" reset
+```
+- #### Применить одну миграцию
+    Применяет только одну следующую миграцию.
+```bash
+goose -dir pkg/database/migrations postgres "host=localhost port=5432 user=delaverdev password=2553500 dbname=go-shop sslmode=disable" up-by-one
+```
+
+- #### Откатить миграции до определенной версии
+    Откатывает миграции до указанной версии.
+```bash
+goose -dir pkg/database/migrations postgres "host=localhost port=5432 user=delaverdev password=2553500 dbname=go-shop sslmode=disable" down-to <target_version>
+```
+
+- #### Список миграций
+    Показывает текущую версию базы данных и список всех миграций.
+```bash
+goose -dir pkg/database/migrations postgres "host=localhost port=5432 user=delaverdev password=2553500 dbname=go-shop sslmode=disable" status
+```
+
+- #### Перейти к конкретной миграции
+    Применяет или откатывает миграции для достижения указанной версии.
+```bash
+goose -dir pkg/database/migrations postgres "host=localhost port=5432 user=delaverdev password=2553500 dbname=go-shop sslmode=disable" goto <target_version>
+```
+
+- #### Создать новую миграцию
+    Создает новый файл миграции с указанным именем.
+```bash
+goose -dir pkg/database/migrations create <migration_name> sql
+```
+
