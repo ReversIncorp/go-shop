@@ -3,7 +3,7 @@ package middleware
 import (
 	"marketplace/config"
 	"marketplace/internal/domain/enums"
-	usecase "marketplace/internal/domain/usecase/user_ucecase"
+	userUsecase "marketplace/internal/domain/usecase/user_ucecase"
 
 	"net/http"
 	"strings"
@@ -13,7 +13,7 @@ import (
 )
 
 // JWTMiddleware обрабатывает аутентификацию JWT токенов.
-func JWTMiddleware(userUseCase *usecase.UserUseCase) echo.MiddlewareFunc {
+func JWTMiddleware(userUseCase *userUsecase.UserUseCase) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			// Извлекаем токен из заголовков Authorization
