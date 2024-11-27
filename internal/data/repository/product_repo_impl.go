@@ -129,16 +129,37 @@ func (r *productRepositoryImpl) Delete(id uint64) error {
 }
 
 func (r *productRepositoryImpl) FindProductsByParams(params entities.ProductSearchParams) ([]entities.Product, *uint64, error) {
+	query, args, err := r.buildProductQuery(params)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error building query: %w", err)
+	}
+
+	rows, err := r.executeQuery(query, args)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error executing query: %w", err)
+	}
+	defer rows.Close()
+
+	products, lastCursor, err := r.processProductRows(rows, params.Limit)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error processing rows: %w", err)
+	}
+
+	return products, lastCursor, nil
+}
+
+// Генерирует SQL-запрос и параметры
+func (r *productRepositoryImpl) buildProductQuery(params entities.ProductSearchParams) (string, []interface{}, error) {
 	query := `SELECT 
-    id, 
-    name,
-    description,
-    price, 
-    quantity, 
-    category_id,
-    store_id,
-    created_at, 
-    updated_at 
+		id, 
+		name, 
+		description, 
+		price, 
+		quantity, 
+		category_id, 
+		store_id, 
+		created_at, 
+		updated_at 
 	FROM products`
 
 	var conditions []string
@@ -181,24 +202,33 @@ func (r *productRepositoryImpl) FindProductsByParams(params entities.ProductSear
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	// Сортировка по ID для правильной работы курсора
+	// Сортировка по ID
 	query += " ORDER BY id ASC"
 
-	// Лимит результатов
+	// Лимит
 	if params.Limit != nil {
 		query += fmt.Sprintf(" LIMIT $%d", len(args)+1)
 		args = append(args, *params.Limit)
 	}
 
+	return query, args, nil
+}
+
+// Выполняет SQL-запрос
+func (r *productRepositoryImpl) executeQuery(query string, args []interface{}) (*sql.Rows, error) {
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error executing query: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
+	return rows, nil
+}
 
-	// Обработка результатов
+// Обрабатывает результаты запроса
+func (r *productRepositoryImpl) processProductRows(rows *sql.Rows, limit *uint64) ([]entities.Product, *uint64, error) {
 	var products []entities.Product
-	var lastID uint64
+	var lastCursor uint64
+
+	// Читаем строки
 	for rows.Next() {
 		var product entities.Product
 		if err := rows.Scan(
@@ -214,20 +244,20 @@ func (r *productRepositoryImpl) FindProductsByParams(params entities.ProductSear
 			return nil, nil, fmt.Errorf("error scanning row: %w", err)
 		}
 		products = append(products, product)
-		lastID = product.ID
+		lastCursor = product.ID
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, nil, fmt.Errorf("error during rows iteration: %w", err)
+	// Проверяем ошибки чтения строк
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
 	}
 
-	// Если данных меньше, чем лимит, значит следующего курсора нет
-	if params.Limit != nil && uint64(len(products)) < *params.Limit {
+	// Если данных меньше лимита, следующего курсора нет
+	if limit != nil && uint64(len(products)) < *limit {
 		return products, nil, nil
 	}
 
-	// Возвращаем данные и курсор
-	return products, &lastID, nil
+	return products, &lastCursor, nil
 }
 
 func (r *productRepositoryImpl) IsProductBelongsToStore(productID, storeID uint64) (bool, error) {

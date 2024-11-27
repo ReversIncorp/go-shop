@@ -161,6 +161,21 @@ func (r *storeRepositoryImpl) FindAll() ([]entities.Store, error) {
 }
 
 func (r *storeRepositoryImpl) FindStoresByParams(params entities.StoreSearchParams) ([]entities.Store, *uint64, error) {
+	query, args, err := r.buildQuery(params)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error building query: %w", err)
+	}
+
+	stores, lastCursor, err := r.executeAndProcessQuery(query, args)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error executing or processing query: %w", err)
+	}
+
+	return stores, lastCursor, nil
+}
+
+// buildQuery генерирует SQL-запрос и параметры
+func (r *storeRepositoryImpl) buildQuery(params entities.StoreSearchParams) (string, []interface{}, error) {
 	var query string
 	var conditions []string
 	var args []interface{}
@@ -173,45 +188,44 @@ func (r *storeRepositoryImpl) FindStoresByParams(params entities.StoreSearchPara
 		conditions = append(conditions, fmt.Sprintf("sc.category_id = $%d", len(args)+1))
 		args = append(args, *params.CategoryID)
 	} else {
-		// Если категория не указана, запрос без JOIN
 		query = `SELECT id, name, description, created_at, updated_at 
 			FROM stores`
 	}
 
-	// Другие фильтры
 	if params.Name != nil {
 		conditions = append(conditions, fmt.Sprintf("name ILIKE $%d", len(args)+1))
 		args = append(args, "%"+*params.Name+"%")
 	}
 
-	// Добавляем фильтр для курсора
 	if params.Cursor != nil {
 		conditions = append(conditions, fmt.Sprintf("id > $%d", len(args)+1))
 		args = append(args, *params.Cursor)
 	}
 
-	// Добавляем условия, если есть
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	// Сортировка и лимит
 	query += " ORDER BY id ASC"
 	if params.Limit != nil {
 		query += fmt.Sprintf(" LIMIT $%d", len(args)+1)
 		args = append(args, *params.Limit)
 	}
 
-	// Выполняем запрос
+	return query, args, nil
+}
+
+// executeAndProcessQuery выполняет запрос и обрабатывает результаты
+func (r *storeRepositoryImpl) executeAndProcessQuery(query string, args []interface{}) ([]entities.Store, *uint64, error) {
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error executing query: %w", err)
 	}
 	defer rows.Close()
 
-	// Обработка результатов
 	var stores []entities.Store
 	var lastCursor *uint64
+
 	for rows.Next() {
 		var store entities.Store
 		if err := rows.Scan(
