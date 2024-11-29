@@ -5,6 +5,9 @@ import (
 	"errors"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
+	errorResponses "marketplace/pkg/errors"
+
+	"github.com/ztrue/tracerr"
 )
 
 type userRepositoryImpl struct {
@@ -22,7 +25,7 @@ func (r *userRepositoryImpl) Create(user entities.User) error {
 	query := `SELECT id, email FROM users WHERE email = $1`
 	err := r.db.QueryRow(query, user.Email).Scan(&existingUser.ID, &existingUser.Email)
 	if err == nil {
-		return errors.New("user already exists")
+		return tracerr.Wrap(errors.New("user already exists"))
 	}
 
 	insertQuery := `INSERT INTO users 
@@ -38,7 +41,7 @@ func (r *userRepositoryImpl) Create(user entities.User) error {
 		user.IsSeller).Scan(&user.ID)
 
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return nil
@@ -62,9 +65,9 @@ func (r *userRepositoryImpl) FindByEmail(email string) (entities.User, error) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return entities.User{}, errors.New("user not found")
+			return entities.User{}, errorResponses.ErrUserNotFound
 		}
-		return entities.User{}, err
+		return entities.User{}, tracerr.Wrap(err)
 	}
 	return user, nil
 }
@@ -87,9 +90,9 @@ func (r *userRepositoryImpl) FindByID(id uint64) (entities.User, error) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return entities.User{}, errors.New("user not found")
+			return entities.User{}, errorResponses.ErrUserNotFound
 		}
-		return entities.User{}, err
+		return entities.User{}, tracerr.Wrap(err)
 	}
 	return user, nil
 }

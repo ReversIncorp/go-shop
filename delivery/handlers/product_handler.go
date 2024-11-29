@@ -50,7 +50,7 @@ func (h *ProductHandler) GetProductByID(c echo.Context) error {
 	}
 	product, err := h.productUseCase.GetProductByID(productID)
 	if err != nil {
-		return errors.ErrInternalServerError
+		return err
 	}
 
 	return c.JSON(http.StatusOK, product)
@@ -109,7 +109,7 @@ func (h *ProductHandler) GetProductsByFilters(c echo.Context) error {
 
 	products, err := h.productUseCase.GetProductsByFilters(searchParams)
 	if err != nil {
-		return errors.ErrInternalServerError
+		return err
 	}
 
 	return c.JSON(http.StatusOK, products)

@@ -12,6 +12,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/pressly/goose/v3 v3.22.1
 	github.com/sirupsen/logrus v1.9.3
+	github.com/ztrue/tracerr v0.4.0
 	go.uber.org/dig v1.18.0
 )
 

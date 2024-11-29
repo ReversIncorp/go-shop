@@ -29,14 +29,10 @@ func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.
 
 	// Сохраняем пользователя в репозиторий
 	if err = u.userRepo.Create(user); err != nil {
-		return nil, errorResponses.ErrInternalServerError
+		return nil, err
 	}
 
-	tokens, err := u.createTokens(user.ID, ctx)
-	if err != nil {
-		return nil, errorResponses.ErrInternalServerError
-	}
-	return tokens, nil
+	return u.createTokens(user.ID, ctx)
 }
 
 // Login Реализация метода Login
@@ -46,12 +42,7 @@ func (u *UserUseCase) Login(email, password string, ctx echo.Context) (*entities
 		return nil, errorResponses.ErrInvalidCredentials
 	}
 
-	tokens, err := u.createTokens(user.ID, ctx)
-	if err != nil {
-		return nil, errorResponses.ErrInternalServerError
-	}
-
-	return tokens, nil
+	return u.createTokens(user.ID, ctx)
 }
 
 // GetUserByID Реализация метода GetUserByID

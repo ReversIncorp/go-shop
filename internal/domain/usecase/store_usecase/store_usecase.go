@@ -46,12 +46,7 @@ func (s *StoreUseCase) DeleteStore(id uint64) error {
 		return errorResponses.ErrStoreNotFound
 	}
 
-	err = s.storeRepo.Delete(id)
-	if err != nil {
-		return errorResponses.ErrInternalServerError
-	}
-
-	return nil
+	return s.storeRepo.Delete(id)
 }
 
 // GetAllStores получает все магазины
@@ -66,12 +61,7 @@ func (s *StoreUseCase) IsUserStoreAdmin(storeID uint64, uid uint64) (bool, error
 		return false, errorResponses.ErrStoreNotFound
 	}
 
-	admin, err := s.storeRepo.IsUserStoreAdmin(storeID, uid)
-	if err != nil {
-		return false, errorResponses.ErrInternalServerError
-	}
-
-	return admin, nil
+	return s.storeRepo.IsUserStoreAdmin(storeID, uid)
 }
 
 // AttachCategoryToStore добавляет категорию к магазину
@@ -86,12 +76,7 @@ func (s *StoreUseCase) AttachCategoryToStore(storeID, categoryID uint64) error {
 		return errorResponses.ErrCategoryAttached
 	}
 
-	err = s.storeRepo.AttachCategory(storeID, categoryID)
-	if err != nil {
-		return errorResponses.ErrInternalServerError
-	}
-
-	return nil
+	return s.storeRepo.AttachCategory(storeID, categoryID)
 }
 
 // DetachCategoryFromStore открепляет категорию от магазина
@@ -106,10 +91,5 @@ func (s *StoreUseCase) DetachCategoryFromStore(storeID, categoryID uint64) error
 		return errorResponses.ErrCategoryNotAttached
 	}
 
-	err = s.storeRepo.DetachCategory(storeID, categoryID)
-	if err != nil {
-		return errorResponses.ErrInternalServerError
-	}
-
-	return nil
+	return s.storeRepo.DetachCategory(storeID, categoryID)
 }

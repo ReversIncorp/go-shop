@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
+	errorResponses "marketplace/pkg/errors"
 	"time"
+
+	"github.com/ztrue/tracerr"
 )
 
 type categoryRepositoryImpl struct {
@@ -27,10 +30,10 @@ func (r *categoryRepositoryImpl) IsExist(id uint64) (bool, error) {
 	).Scan(&existingStoreID)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return false, errors.New("category not found")
+		return false, nil
 	}
 	if err != nil {
-		return false, err
+		return false, tracerr.Wrap(err)
 	}
 
 	return true, nil
@@ -47,7 +50,7 @@ func (r *categoryRepositoryImpl) Save(category entities.Category) error {
 		category.CreatedAt,
 	)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return nil
@@ -56,7 +59,7 @@ func (r *categoryRepositoryImpl) Save(category entities.Category) error {
 func (r *categoryRepositoryImpl) Delete(id uint64) error {
 	_, err := r.db.Exec("DELETE FROM categories WHERE id = $1", id)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	return nil
 }
@@ -71,7 +74,7 @@ func (r *categoryRepositoryImpl) FindAllByStore(storeID uint64) ([]entities.Cate
 	WHERE store_categories.store_id = $1`, storeID)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to query categories: %w", err)
+		return nil, tracerr.Wrap(fmt.Errorf("failed to query categories: %w", err))
 	}
 	defer rows.Close()
 
@@ -83,13 +86,13 @@ func (r *categoryRepositoryImpl) FindAllByStore(storeID uint64) ([]entities.Cate
 			&category.Name,
 			&category.CreatedAt,
 		); err != nil {
-			return nil, fmt.Errorf("failed to scan category row: %w", err)
+			return nil, tracerr.Wrap(fmt.Errorf("failed to scan category row: %w", err))
 		}
 		categories = append(categories, category)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error during rows iteration: %w", err)
+		return nil, tracerr.Wrap(fmt.Errorf("error during rows iteration: %w", err))
 	}
 
 	return categories, nil
@@ -108,7 +111,7 @@ func (r *categoryRepositoryImpl) FindByID(id uint64) (entities.Category, error) 
 		)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return entities.Category{}, errors.New("category not found")
+		return entities.Category{}, errorResponses.ErrCategoryNotFound
 	}
 	if err != nil {
 		return entities.Category{}, err
@@ -125,7 +128,7 @@ func (r *categoryRepositoryImpl) FindAll() ([]entities.Category, error) {
 	FROM categories`)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to query categories: %w", err)
+		return nil, tracerr.Wrap(fmt.Errorf("failed to query categories: %w", err))
 	}
 	defer rows.Close()
 
@@ -137,13 +140,13 @@ func (r *categoryRepositoryImpl) FindAll() ([]entities.Category, error) {
 			&category.Name,
 			&category.CreatedAt,
 		); err != nil {
-			return nil, fmt.Errorf("failed to scan category row: %w", err)
+			return nil, tracerr.Wrap(fmt.Errorf("failed to scan category row: %w", err))
 		}
 		categories = append(categories, category)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error during rows iteration: %w", err)
+		return nil, tracerr.Wrap(fmt.Errorf("error during rows iteration: %w", err))
 	}
 
 	return categories, nil

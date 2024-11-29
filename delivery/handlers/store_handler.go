@@ -96,7 +96,7 @@ func (h *StoreHandler) DeleteStore(c echo.Context) error {
 func (h *StoreHandler) GetAllStores(c echo.Context) error {
 	stores, err := h.storeUseCase.GetAllStores()
 	if err != nil {
-		return errors.ErrInternalServerError
+		return err
 	}
 
 	return c.JSON(http.StatusOK, stores)

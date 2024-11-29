@@ -72,7 +72,7 @@ func (h *UserHandler) GetUserByID(c echo.Context) error {
 	}
 	user, err := h.userUseCase.GetUserByID(uint64ID)
 	if err != nil {
-		return errors.ErrUserNotFound
+		return err
 	}
 
 	return c.JSON(http.StatusOK, user)
@@ -87,7 +87,7 @@ func (h *UserHandler) UpdateToken(c echo.Context) error {
 	}
 	user, err := h.userUseCase.GetUserByID(uint64ID)
 	if err != nil {
-		return errors.ErrUserNotFound
+		return err
 	}
 
 	return c.JSON(http.StatusOK, user)

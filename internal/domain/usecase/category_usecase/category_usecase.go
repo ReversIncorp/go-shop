@@ -29,7 +29,7 @@ func (c *CategoryUseCase) CreateCategory(category entities.Category, uid uint64)
 
 	err = c.categoryRepo.Save(category)
 	if err != nil {
-		return errorResponses.ErrInternalServerError
+		return err
 	}
 
 	return nil
@@ -45,9 +45,14 @@ func (c *CategoryUseCase) DeleteCategory(id, uid uint64) error {
 		return errorResponses.ErrUserNotSeller
 	}
 
+	exists, err := c.categoryRepo.IsExist(id)
+	if err != nil || !exists {
+		return errorResponses.ErrCategoryNotFound
+	}
+
 	err = c.categoryRepo.Delete(id)
 	if err != nil {
-		return errorResponses.ErrInternalServerError
+		return err
 	}
 
 	return nil

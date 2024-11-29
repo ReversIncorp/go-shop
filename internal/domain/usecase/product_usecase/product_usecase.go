@@ -32,7 +32,7 @@ func (p *ProductUseCase) CreateProduct(product entities.Product) error {
 
 	err = p.productRepo.Save(product)
 	if err != nil {
-		return errorResponses.ErrInternalServerError
+		return err
 	}
 
 	return nil
@@ -57,7 +57,7 @@ func (p *ProductUseCase) UpdateProduct(product entities.Product) error {
 
 	err = p.productRepo.Save(product)
 	if err != nil {
-		return errorResponses.ErrInternalServerError
+		return err
 	}
 
 	return nil
@@ -77,7 +77,7 @@ func (p *ProductUseCase) DeleteProduct(id uint64) error {
 
 	err = p.productRepo.Delete(id)
 	if err != nil {
-		return errorResponses.ErrInternalServerError
+		return err
 	}
 
 	return nil

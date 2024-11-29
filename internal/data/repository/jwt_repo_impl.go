@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
+	"github.com/ztrue/tracerr"
 )
 
 // redisJWTRepository - реализация JWTRepository для Redis
@@ -36,7 +37,7 @@ func (r *redisJWTRepository) SaveToken(
 ) error {
 	jsonToken, err := json.Marshal(token)
 	if err != nil {
-		return fmt.Errorf("failed to marshal token: %v", err)
+		return tracerr.Wrap(fmt.Errorf("failed to marshal token: %v", err))
 	}
 	if err = r.redisClient.SetEX(
 		r.context,
@@ -48,7 +49,7 @@ func (r *redisJWTRepository) SaveToken(
 		),
 		jsonToken, tokenType.Duration(),
 	).Err(); err != nil {
-		return fmt.Errorf("failed to save token into Redis: %v", err)
+		return tracerr.Wrap(fmt.Errorf("failed to save token into Redis: %v", err))
 	}
 	return nil
 }
@@ -70,13 +71,13 @@ func (r *redisJWTRepository) GetToken(
 		),
 	).Result()
 	if errors.Is(err, redis.Nil) {
-		return nil, fmt.Errorf("tokens not found")
+		return nil, tracerr.Wrap(fmt.Errorf("tokens not found"))
 	} else if err != nil {
-		return nil, fmt.Errorf("error retrieving tokens: %v", err)
+		return nil, tracerr.Wrap(fmt.Errorf("error retrieving tokens: %v", err))
 	}
 
 	if err = json.Unmarshal([]byte(tokenJson), &token); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal token: %v", err)
+		return nil, tracerr.Wrap(fmt.Errorf("failed to unmarshal token: %v", err))
 	}
 	return token, nil
 }

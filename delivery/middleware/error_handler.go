@@ -15,9 +15,10 @@ func ErrorHandlerMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			if appErr, ok := err.(*errors.ErrorResponse); ok {
 				return c.JSON(appErr.Code, appErr)
 			}
+			errors.LogErrorWithTracer(err) // Логируем ошибку со стектрейсом.
 			return c.JSON(http.StatusInternalServerError, &errors.ErrorResponse{
-				Code:    http.StatusInternalServerError,
-				Details: err.Error(),
+				Code:    errors.ErrInternalServerError.Code,
+				Details: errors.ErrInternalServerError.Details,
 			})
 		}
 		return nil

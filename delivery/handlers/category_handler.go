@@ -87,7 +87,7 @@ func (h *CategoryHandler) GetCategoryByID(c echo.Context) error {
 
 	category, err := h.categoryUseCase.GetCategoryByID(uint64ID)
 	if err != nil {
-		return errors.ErrCategoryNotFound
+		return err
 	}
 
 	return c.JSON(http.StatusOK, category)
