@@ -2,6 +2,7 @@ package errors
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -11,13 +12,26 @@ import (
 func LogErrorWithTracer(err error) {
 	if wrappedErr := tracerr.Wrap(err); wrappedErr != nil {
 		logrus.Errorf("%s, stack trace: ", wrappedErr.Error())
-		PrintFilteredSourceColor(wrappedErr, "marketplace")
+		printFilteredSourceColor(wrappedErr, "marketplace")
 	} else {
 		logrus.Error(err)
 	}
 }
 
-func PrintFilteredSourceColor(err error, module string) {
+func FatalErrorWithTracer(message string, err error) {
+	redColor := "\033[31m"
+	resetColor := "\033[0m"
+	if wrappedErr := tracerr.Wrap(err); wrappedErr != nil {
+		log.Printf("%s[ERROR]%s %s:\n", redColor, resetColor, message)
+		printFilteredSourceColor(wrappedErr, "marketplace")
+		log.Fatalf("%s[ERROR DETAILS]%s: %v", redColor, resetColor, err) // Завершаем выполнение
+	} else {
+		log.Printf("%s[ERROR]%s %s:\n", redColor, resetColor, message)
+		log.Fatalf("%s[ERROR DETAILS]%s: %v", redColor, resetColor, err) // Завершаем выполнение
+	}
+}
+
+func printFilteredSourceColor(err error, module string) {
 	// Получаем стектрейс из ошибки
 	tracedErr := tracerr.Wrap(err)
 	stack := tracerr.StackTrace(tracedErr)

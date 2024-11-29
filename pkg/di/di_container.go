@@ -1,7 +1,7 @@
 package di
 
 import (
-	"fmt"
+	"database/sql"
 	"marketplace/delivery/handlers"
 	"marketplace/delivery/middleware"
 	"marketplace/internal/data/repository"
@@ -15,6 +15,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
+	"github.com/ztrue/tracerr"
 	"go.uber.org/dig"
 )
 
@@ -25,81 +26,78 @@ func Container() *dig.Container {
 }
 
 func RegisterDatabases(container *dig.Container) error {
-	if err := container.Provide(registerRedisClient); err != nil {
-		return err
+	// Создаем экземпляр Redis и проверяем соединение
+	redisClient, err := database.NewRedisClient()
+	if err != nil {
+		return tracerr.Errorf("failed to connect to Redis: %w", err)
 	}
-	if err := container.Provide(database.OpenPostgreSQL); err != nil {
-		return err
+	if err = container.Provide(func() *redis.Client { return redisClient }); err != nil {
+		return tracerr.Errorf("failed to register Redis client: %w", err)
 	}
-	return nil
-}
 
-func registerRedisClient() (*redis.Client, error) {
-	redisClient := redis.NewClient(
-		&redis.Options{
-			Addr:     os.Getenv("REDIS_ADDR"),
-			Password: "",
-			DB:       0,
-		},
-	)
-	pong, err := redisClient.Ping(redisClient.Context()).Result()
-	if pong != "PONG" || err != nil {
-		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+	// Создаем экземпляр PostgreSQL и проверяем соединение
+	postgresDB, err := database.OpenPostgreSQL()
+	if err != nil {
+		return tracerr.Errorf("failed to connect to PostgreSQL: %w", err)
 	}
-	return redisClient, nil
+	if err = container.Provide(func() *sql.DB { return postgresDB }); err != nil {
+		return tracerr.Errorf("failed to register PostgreSQL client: %w", err)
+	}
+
+	return nil
 }
 
 func RegisterDependencies(container *dig.Container) error {
 	if err := container.Provide(utils.AppValidate); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	// Регистрация логгера
 	if err := container.Provide(middleware.AppLoggersSingleton); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	// Регистрация репозиториев
 	if err := container.Provide(repository.NewUserRepository); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	if err := container.Provide(repository.NewProductRepository); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	if err := container.Provide(repository.NewStoreRepository); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	if err := container.Provide(repository.NewCategoryRepository); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	if err := container.Provide(repository.NewRedisJWTRepository); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	// Регистрация use cases
 	if err := container.Provide(userUsecase.NewUserUseCase); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	if err := container.Provide(productUsecase.NewProductUseCase); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	if err := container.Provide(storeUsecase.NewStoreUseCase); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	if err := container.Provide(categoryUsecase.NewCategoryUseCase); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	// Регистрация обработчиков
 	if err := container.Provide(handlers.NewUserHandler); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	if err := container.Provide(handlers.NewProductHandler); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	if err := container.Provide(handlers.NewStoreHandler); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	if err := container.Provide(handlers.NewCategoryHandler); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return nil
@@ -111,7 +109,7 @@ func RegisterMiddleware(container *dig.Container, e *echo.Echo) error {
 	if err := container.Invoke(func(logger *middleware.AppLoggers) {
 		httpLogger = logger
 	}); err != nil {
-		return fmt.Errorf("failed to invoke logger: %w", err)
+		return tracerr.Errorf("failed to invoke logger: %w", err)
 	}
 
 	// Добавляем midleware для логирования в зависимости от окружения
@@ -144,8 +142,7 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 		categoryHandler = ch
 		storeUseCase = su
 	}); err != nil {
-		fmt.Printf("Failed to invoke handlers or use case: %v\n", err)
-		return err
+		return tracerr.Errorf("Failed to invoke handlers or use case: %v\n", err)
 	}
 
 	// Первичный скоуп, на который вешаем миддлвейр для хендла ошибок и возможно другие общие вещи.
