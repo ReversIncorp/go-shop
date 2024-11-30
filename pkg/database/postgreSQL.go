@@ -6,7 +6,6 @@ import (
 	"os"
 
 	_ "github.com/lib/pq"
-	"github.com/pressly/goose/v3"
 )
 
 func OpenPostgreSQL() (*sql.DB, error) {
@@ -32,18 +31,5 @@ func OpenPostgreSQL() (*sql.DB, error) {
 		return nil, fmt.Errorf("ping to database failed: %w", err)
 	}
 
-	err = MigratePostgreSQL(db)
-	if err != nil {
-		return nil, err
-	}
-
 	return db, nil
-}
-
-func MigratePostgreSQL(database *sql.DB) error {
-	if err := goose.Up(database, "../pkg/database/migrations"); err != nil {
-		return fmt.Errorf("failed to apply migrations: %v\n", err)
-	}
-
-	return nil
 }
