@@ -11,7 +11,7 @@ import (
 func main() {
 	// Load .env file
 	var err error
-	err = godotenv.Load("../.env")
+	err = godotenv.Load(".env")
 	if err != nil {
 		err := fmt.Sprintf("Error loading .env file.\n%s", err)
 		panic(err)
