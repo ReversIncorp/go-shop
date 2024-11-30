@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
+	"strings"
 	"time"
 )
 
@@ -157,6 +158,94 @@ func (r *storeRepositoryImpl) FindAll() ([]entities.Store, error) {
 	}
 
 	return stores, nil
+}
+
+func (r *storeRepositoryImpl) FindStoresByParams(params entities.StoreSearchParams) ([]entities.Store, *uint64, error) {
+	query, args, err := r.buildQuery(params)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error building query: %w", err)
+	}
+
+	stores, lastCursor, err := r.executeAndProcessQuery(query, args)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error executing or processing query: %w", err)
+	}
+
+	return stores, lastCursor, nil
+}
+
+// buildQuery генерирует SQL-запрос и параметры
+func (r *storeRepositoryImpl) buildQuery(params entities.StoreSearchParams) (string, []interface{}, error) {
+	var query string
+	var conditions []string
+	var args []interface{}
+
+	// Если указан CategoryID, добавляем JOIN
+	if params.CategoryID != nil {
+		query = `SELECT s.id, s.name, s.description, s.created_at, s.updated_at 
+			FROM stores s
+			INNER JOIN store_categories sc ON s.id = sc.store_id`
+		conditions = append(conditions, fmt.Sprintf("sc.category_id = $%d", len(args)+1))
+		args = append(args, *params.CategoryID)
+	} else {
+		query = `SELECT id, name, description, created_at, updated_at 
+			FROM stores`
+	}
+
+	if params.Name != nil {
+		conditions = append(conditions, fmt.Sprintf("name ILIKE $%d", len(args)+1))
+		args = append(args, "%"+*params.Name+"%")
+	}
+
+	if params.Cursor != nil {
+		conditions = append(conditions, fmt.Sprintf("id > $%d", len(args)+1))
+		args = append(args, *params.Cursor)
+	}
+
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	query += " ORDER BY id ASC"
+	if params.Limit != nil {
+		query += fmt.Sprintf(" LIMIT $%d", len(args)+1)
+		args = append(args, *params.Limit)
+	}
+
+	return query, args, nil
+}
+
+// executeAndProcessQuery выполняет запрос и обрабатывает результаты
+func (r *storeRepositoryImpl) executeAndProcessQuery(query string, args []interface{}) ([]entities.Store, *uint64, error) {
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error executing query: %w", err)
+	}
+	defer rows.Close()
+
+	var stores []entities.Store
+	var lastCursor *uint64
+
+	for rows.Next() {
+		var store entities.Store
+		if err := rows.Scan(
+			&store.ID,
+			&store.Name,
+			&store.Description,
+			&store.CreatedAt,
+			&store.UpdatedAt,
+		); err != nil {
+			return nil, nil, fmt.Errorf("error scanning row: %w", err)
+		}
+		stores = append(stores, store)
+		lastCursor = &store.ID
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, nil, fmt.Errorf("error during rows iteration: %w", err)
+	}
+
+	return stores, lastCursor, nil
 }
 
 func (r *storeRepositoryImpl) AttachCategory(storeID, categoryID uint64) error {

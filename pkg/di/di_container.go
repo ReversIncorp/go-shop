@@ -176,7 +176,7 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	// Регистрация маршрутов для магазинов
 	authorizedScope.POST("/stores", storeHandler.CreateStore)
 	authorizedScope.GET("/stores/:store_id", storeHandler.GetStoreByID)
-	authorizedScope.GET("/stores", storeHandler.GetAllStores)
+	authorizedScope.GET("/stores", storeHandler.GetStoresByFilters)
 	authorizedScope.GET("/stores/:store_id/categories", categoryHandler.GetAllCategoriesByStore)
 	// Для админов сторов
 	storeAdminScope.PUT("", storeHandler.UpdateStore)

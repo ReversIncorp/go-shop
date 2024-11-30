@@ -87,3 +87,8 @@ func (s *StoreUseCase) DetachCategoryFromStore(storeID, categoryID uint64) error
 
 	return s.storeRepo.DetachCategory(storeID, categoryID)
 }
+
+// GetStoresByFilters получает все магазины по фильтрам
+func (s *StoreUseCase) GetStoresByFilters(filters entities.StoreSearchParams) ([]entities.Store, *uint64, error) {
+	return s.storeRepo.FindStoresByParams(filters)
+}
