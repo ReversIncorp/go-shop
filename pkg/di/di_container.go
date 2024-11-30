@@ -130,6 +130,7 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	var storeHandler *handlers.StoreHandler
 	var categoryHandler *handlers.CategoryHandler
 	var storeUseCase *storeUsecase.StoreUseCase
+	var userUseCase *userUsecase.UserUseCase
 
 	// Получаем хэндлеры и use case через контейнер
 	if err := container.Invoke(func(
@@ -137,12 +138,14 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 		ph *handlers.ProductHandler,
 		sh *handlers.StoreHandler,
 		ch *handlers.CategoryHandler,
-		su *storeUsecase.StoreUseCase) {
+		su *storeUsecase.StoreUseCase,
+		uu *userUsecase.UserUseCase) {
 		userHandler = uh
 		productHandler = ph
 		storeHandler = sh
 		categoryHandler = ch
 		storeUseCase = su
+		userUseCase = uu
 	}); err != nil {
 		fmt.Printf("Failed to invoke handlers or use case: %v\n", err)
 		return err
@@ -150,7 +153,7 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 
 	// Основной скоуп для авторизованных юзеров
 	authorizedScope := e.Group("")
-	authorizedScope.Use(middleware.JWTMiddleware)
+	authorizedScope.Use(middleware.JWTMiddleware(userUseCase))
 
 	// Скоуп для админов сторов
 	storeAdminScope := authorizedScope.Group("/stores/:store_id")
@@ -159,6 +162,8 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	// Регистрация маршрутов для пользователей
 	e.POST("/users", userHandler.Register)
 	e.POST("/users/login", userHandler.Login)
+	e.POST("/users/refresh-session", userHandler.RefreshSession)
+	e.POST("/users/logout", userHandler.Logout)
 
 	// Регистрация маршрутов для продуктов
 	authorizedScope.GET("/products/:id", productHandler.GetProductByID)

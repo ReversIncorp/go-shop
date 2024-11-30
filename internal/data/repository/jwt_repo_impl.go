@@ -6,11 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"marketplace/internal/domain/entities"
-	"marketplace/internal/domain/enums"
 	"marketplace/internal/domain/repository"
+	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/labstack/echo/v4"
 )
 
 // redisJWTRepository - реализация JWTRepository для Redis
@@ -27,72 +26,79 @@ func NewRedisJWTRepository(redisClient *redis.Client) repository.JWTRepository {
 	}
 }
 
-// SaveToken saves TokenDetails in Redis with a specified expiration time
-func (r *redisJWTRepository) SaveToken(
-	userID uint64,
-	token *entities.TokenDetails,
-	tokenType enums.Token,
-	ctx echo.Context,
-) error {
-	jsonToken, err := json.Marshal(token)
+func (r *redisJWTRepository) SaveSession(userID uint64, sessionID string, session *entities.SessionDetails) error {
+	sessionKey := fmt.Sprintf("user:%d:session:%s", userID, sessionID)
+
+	jsonSession, err := json.Marshal(session)
 	if err != nil {
-		return fmt.Errorf("failed to marshal token: %v", err)
+		return fmt.Errorf("failed to marshal session: %v", err)
 	}
-	if err = r.redisClient.SetEX(
-		r.context,
-		fmt.Sprintf(
-			"%s_%s:%d",
-			tokenType.String(),
-			ctx.Request().Header.Get("User-Agent"),
-			userID,
-		),
-		jsonToken, tokenType.Duration(),
-	).Err(); err != nil {
-		return fmt.Errorf("failed to save token into Redis: %v", err)
+
+	ttl := time.Until(time.Unix(session.ExpiresAt, 0))
+	if ttl <= 0 {
+		return fmt.Errorf("session expiration time is invalid or already expired")
 	}
+
+	if err = r.redisClient.SetEX(r.context, sessionKey, jsonSession, ttl).Err(); err != nil {
+		return fmt.Errorf("failed to save session with expiration: %v", err)
+	}
+
 	return nil
 }
 
-// GetToken retrieves TokenDetails by userID
-func (r *redisJWTRepository) GetToken(
-	userID uint64,
-	tokenType enums.Token,
-	ctx echo.Context,
-) (*entities.TokenDetails, error) {
-	var token *entities.TokenDetails
-	tokenJson, err := r.redisClient.Get(
-		r.context,
-		fmt.Sprintf(
-			"%s_%s:%d",
-			tokenType.String(),
-			ctx.Request().Header.Get("User-Agent()"),
-			userID,
-		),
-	).Result()
+func (r *redisJWTRepository) GetSession(userID uint64, sessionID string) (*entities.SessionDetails, error) {
+	sessionKey := fmt.Sprintf("user:%d:session:%s", userID, sessionID)
+
+	sessionJSON, err := r.redisClient.Get(r.context, sessionKey).Result()
 	if errors.Is(err, redis.Nil) {
-		return nil, fmt.Errorf("tokens not found")
+		return nil, fmt.Errorf("session not found")
 	} else if err != nil {
-		return nil, fmt.Errorf("error retrieving tokens: %v", err)
+		return nil, fmt.Errorf("failed to get session: %v", err)
 	}
 
-	if err = json.Unmarshal([]byte(tokenJson), &token); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal token: %v", err)
+	var session entities.SessionDetails
+	if err = json.Unmarshal([]byte(sessionJSON), &session); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal session: %v", err)
 	}
-	return token, nil
+
+	return &session, nil
 }
 
-// DeleteToken removes tokens by userID
-func (r *redisJWTRepository) DeleteToken(userID uint64, tokenType enums.Token, ctx echo.Context) error {
-	err := r.redisClient.Del(r.context,
-		fmt.Sprintf(
-			"%s_%s:%d",
-			tokenType.String(),
-			ctx.Request().Header.Get("User-Agent"),
-			userID,
-		),
-	).Err()
-	if err != nil {
-		return fmt.Errorf("failed to delete tokens: %v", err)
+func (r *redisJWTRepository) GetAllSessions(userID uint64) (map[string]*entities.SessionDetails, error) {
+	sessionPattern := fmt.Sprintf("user:%d:session:*", userID)
+
+	iter := r.redisClient.Scan(r.context, 0, sessionPattern, 0).Iterator()
+	result := make(map[string]*entities.SessionDetails)
+
+	for iter.Next(r.context) {
+		sessionKey := iter.Val()
+		sessionJSON, err := r.redisClient.Get(r.context, sessionKey).Result()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get session: %v", err)
+		}
+
+		var session entities.SessionDetails
+		if err = json.Unmarshal([]byte(sessionJSON), &session); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal session: %v", err)
+		}
+
+		sessionID := sessionKey[len(fmt.Sprintf("user:%d:session:", userID)):]
+		result[sessionID] = &session
 	}
+
+	if err := iter.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate sessions: %v", err)
+	}
+
+	return result, nil
+}
+
+func (r *redisJWTRepository) DeleteSession(userID uint64, sessionID string) error {
+	sessionKey := fmt.Sprintf("user:%d:session:%s", userID, sessionID)
+
+	if err := r.redisClient.Del(r.context, sessionKey).Err(); err != nil {
+		return fmt.Errorf("failed to delete session: %v", err)
+	}
+
 	return nil
 }
