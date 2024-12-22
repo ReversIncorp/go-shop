@@ -2,6 +2,6 @@
 
 # run sorting imports
 #make lint-fast
-
+make sort
 # If we made it this far, the commit is allowed
 exit 0

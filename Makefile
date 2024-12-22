@@ -20,6 +20,9 @@ lint:
 lint-fast: 
 	$(GOLANGCI_LINT) run ./... --fast --config=./.golangci.yaml
 
+sort:
+	goimports -w .
+
 swagger:
 	RUN swag init -g app/main.go
 

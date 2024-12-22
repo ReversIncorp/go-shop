@@ -12,13 +12,13 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-// redisJWTRepository - реализация JWTRepository для Redis
+// redisJWTRepository - реализация JWTRepository для Redis.
 type redisJWTRepository struct {
 	redisClient *redis.Client
 	context     context.Context
 }
 
-// NewRedisJWTRepository - конструктор для создания нового экземпляра redisJWTRepository
+// NewRedisJWTRepository - конструктор для создания нового экземпляра redisJWTRepository.
 func NewRedisJWTRepository(redisClient *redis.Client) repository.JWTRepository {
 	return &redisJWTRepository{
 		redisClient: redisClient,
