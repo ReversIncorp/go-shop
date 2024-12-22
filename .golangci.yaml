@@ -339,7 +339,11 @@ issues:
     - linters:
         - govet
       path: ".*"
-      text: "declaration of 'err' shadows declaration"
+      text: "declaration of \"err\" shadows declaration"
+    - linters:
+        - govet
+      path: ".*"
+      text: "declaration of \"ok\" shadows declaration"
     - path: ^delivery/middleware/logger\.go$
       linters:
         - gochecknoglobals
