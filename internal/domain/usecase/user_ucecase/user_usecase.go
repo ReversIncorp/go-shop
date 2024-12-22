@@ -72,16 +72,16 @@ func (u *UserUseCase) Logout(accessToken string) error {
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		userID, ok := claims["user_id"]
+		userID, ok := claims["user_id"].(uint64)
 		if !ok {
-			return fmt.Errorf("invalid token: user_id missing or invalid")
+			return errors.New("invalid token: user_id missing or invalid")
 		}
-		sessionUUID, ok := claims["session_uuid"]
+		sessionUUID, ok := claims["session_uuid"].(string)
 		if !ok {
-			return fmt.Errorf("invalid token: session UUID missing or invalid")
+			return errors.New("invalid token: session UUID missing or invalid")
 		}
 
-		err := u.tokenRepo.DeleteSession(userID.(uint64), sessionUUID.(string))
+		err := u.tokenRepo.DeleteSession(userID, sessionUUID)
 		if err != nil {
 			return errors.New("session deletion failed")
 		}
@@ -98,20 +98,20 @@ func (u *UserUseCase) UpdateSession(refreshToken string, ctx echo.Context) (*ent
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		userID, ok := claims["user_id"]
+		userID, ok := claims["user_id"].(float64)
 		if !ok {
 			return nil, fmt.Errorf("invalid token: user_id missing or invalid")
 		}
-		sessionUUID, ok := claims["session_uuid"]
+		sessionUUID, ok := claims["session_uuid"].(string)
 		if !ok {
 			return nil, fmt.Errorf("invalid token: session UUID missing or invalid")
 		}
 
-		session, err := u.createSession(userID.(uint64), sessionUUID.(string), ctx)
+		session, err := u.createSession(uint64(userID), sessionUUID, ctx)
 		if err != nil {
 			return nil, fmt.Errorf("session creation failed")
 		}
-		err = u.tokenRepo.SaveSession(userID.(uint64), sessionUUID.(string), session)
+		err = u.tokenRepo.SaveSession(uint64(userID), sessionUUID, session)
 		if err != nil {
 			return nil, fmt.Errorf("session saving failed")
 		}
@@ -175,8 +175,12 @@ func (u *UserUseCase) ValidateToken(tokenString string, key []byte, tokenType en
 	return nil, errors.New("invalid token")
 }
 
-// UpdateSession Реализация метода UpdateSession
-func (u *UserUseCase) createSession(userID uint64, sessionID string, ctx echo.Context) (*entities.SessionDetails, error) {
+// UpdateSession Реализация метода UpdateSession.
+func (u *UserUseCase) createSession(
+	userID uint64,
+	sessionID string,
+	ctx echo.Context,
+) (*entities.SessionDetails, error) {
 	session := &entities.SessionDetails{}
 	session.DeviceInfo = ctx.Request().Header.Get("User-Agent")
 	session.IPAddress = ctx.RealIP()

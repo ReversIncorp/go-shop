@@ -147,7 +147,7 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 		storeUseCase = su
 		userUseCase = uu
 	}); err != nil {
-		fmt.Printf("Failed to invoke handlers or use case: %v\n", err)
+		fmt.Println("Failed to invoke handlers or use case: %w\n", err)
 		return err
 	}
 

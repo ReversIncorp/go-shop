@@ -56,18 +56,24 @@ func (r *storeRepositoryImpl) Save(store entities.Store, uid uint64) error {
 		store.UpdatedAt).Scan(&newStoreID)
 
 	if err != nil {
-		tx.Rollback()
+		err = tx.Rollback()
+		if err != nil {
+			return err
+		}
 		return fmt.Errorf("failed to save store: %w", err)
 	}
 
 	_, err = tx.Exec(`INSERT INTO store_roles (store_id, user_id, is_owner) VALUES ($1, $2, $3)`,
 		newStoreID, uid, true)
 	if err != nil {
-		tx.Rollback()
+		err = tx.Rollback()
+		if err != nil {
+			return err
+		}
 		return fmt.Errorf("failed to add user as store admin: %w", err)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
@@ -143,7 +149,7 @@ func (r *storeRepositoryImpl) FindAll() ([]entities.Store, error) {
 	var stores []entities.Store
 	for rows.Next() {
 		var store entities.Store
-		if err := rows.Scan(&store.ID,
+		if err = rows.Scan(&store.ID,
 			&store.Name,
 			&store.Description,
 			&store.CreatedAt,
@@ -174,7 +180,7 @@ func (r *storeRepositoryImpl) FindStoresByParams(params entities.StoreSearchPara
 	return stores, lastCursor, nil
 }
 
-// buildQuery генерирует SQL-запрос и параметры
+// buildQuery генерирует SQL-запрос и параметры.
 func (r *storeRepositoryImpl) buildQuery(params entities.StoreSearchParams) (string, []interface{}, error) {
 	var query string
 	var conditions []string
@@ -215,8 +221,11 @@ func (r *storeRepositoryImpl) buildQuery(params entities.StoreSearchParams) (str
 	return query, args, nil
 }
 
-// executeAndProcessQuery выполняет запрос и обрабатывает результаты
-func (r *storeRepositoryImpl) executeAndProcessQuery(query string, args []interface{}) ([]entities.Store, *uint64, error) {
+// executeAndProcessQuery выполняет запрос и обрабатывает результаты.
+func (r *storeRepositoryImpl) executeAndProcessQuery(
+	query string,
+	args []interface{},
+) ([]entities.Store, *uint64, error) {
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error executing query: %w", err)
@@ -228,7 +237,7 @@ func (r *storeRepositoryImpl) executeAndProcessQuery(query string, args []interf
 
 	for rows.Next() {
 		var store entities.Store
-		if err := rows.Scan(
+		if err = rows.Scan(
 			&store.ID,
 			&store.Name,
 			&store.Description,
