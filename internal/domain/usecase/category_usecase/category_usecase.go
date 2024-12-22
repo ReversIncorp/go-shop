@@ -1,4 +1,4 @@
-package categoryUsecase
+package categoryusecase
 
 import (
 	"errors"

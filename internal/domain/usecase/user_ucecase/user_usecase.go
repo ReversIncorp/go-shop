@@ -1,4 +1,4 @@
-package userUsecase
+package userusecase
 
 import (
 	"errors"
@@ -20,12 +20,12 @@ type UserUseCase struct {
 	tokenRepo repository.JWTRepository
 }
 
-// NewUserUseCase Конструктор для создания новой UserUseCase
+// NewUserUseCase Конструктор для создания новой UserUseCase.
 func NewUserUseCase(userRepo repository.UserRepository, tokenRepo repository.JWTRepository) *UserUseCase {
 	return &UserUseCase{userRepo: userRepo, tokenRepo: tokenRepo}
 }
 
-// Register Реализация метода Register
+// Register Реализация метода Register.
 func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.SessionDetails, error) {
 	existingUser, err := u.userRepo.FindByEmail(user.Email)
 	if err == nil && existingUser.ID != 0 {
@@ -45,7 +45,7 @@ func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.
 	return tokens, nil
 }
 
-// Login Реализация метода Login
+// Login Реализация метода Login.
 func (u *UserUseCase) Login(email, password string, ctx echo.Context) (*entities.SessionDetails, error) {
 	user, err := u.userRepo.FindByEmail(email)
 	if err != nil || user.Password != password { // Здесь должна быть логика хэширования пароля
@@ -60,7 +60,7 @@ func (u *UserUseCase) Login(email, password string, ctx echo.Context) (*entities
 	return tokens, nil
 }
 
-// GetUserByID Реализация метода GetUserByID
+// GetUserByID Реализация метода GetUserByID.
 func (u *UserUseCase) GetUserByID(id uint64) (entities.User, error) {
 	return u.userRepo.FindByID(id)
 }

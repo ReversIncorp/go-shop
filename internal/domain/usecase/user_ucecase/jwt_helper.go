@@ -1,4 +1,4 @@
-package userUsecase
+package userusecase
 
 import (
 	"marketplace/internal/domain/enums"
@@ -7,7 +7,7 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-// GenerateToken создает новые Access и Refresh токены
+// GenerateToken создает новые Access и Refresh токены.
 func GenerateToken(userID uint64, sessionID string, tokenType enums.Token, key []byte) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id":      userID,

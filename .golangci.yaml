@@ -336,6 +336,14 @@ issues:
   max-same-issues: 50
 
   exclude-rules:
+    - path: ^delivery/middleware/logger\.go$
+      linters:
+        - gochecknoglobals
+      text: appLoggers
+    - path: ^delivery/middleware/logger\.go$
+      linters:
+        - gochecknoglobals
+      text: once
     - source: "(noinspection|TODO)"
       linters: [ godot ]
     - source: "//noinspection"

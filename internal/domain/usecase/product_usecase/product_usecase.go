@@ -1,4 +1,4 @@
-package productUsecase
+package productusecase
 
 import (
 	"errors"
@@ -6,13 +6,13 @@ import (
 	"marketplace/internal/domain/repository"
 )
 
-// ProductUseCase реализует интерфейс ProductUseCase
+// ProductUseCase реализует интерфейс ProductUseCase.
 type ProductUseCase struct {
 	productRepo repository.ProductRepository
 	storeRepo   repository.StoreRepository
 }
 
-// NewProductUseCase создает новый экземпляр ProductUseCase
+// NewProductUseCase создает новый экземпляр ProductUseCase.
 func NewProductUseCase(
 	productRepo repository.ProductRepository,
 	storeRepo repository.StoreRepository,
@@ -23,7 +23,7 @@ func NewProductUseCase(
 	}
 }
 
-// CreateProduct создает новый продукт
+// CreateProduct создает новый продукт.
 func (p *ProductUseCase) CreateProduct(product entities.Product) error {
 	categoryBelongs, err := p.storeRepo.IsCategoryAttached(product.StoreID, product.CategoryID)
 	if err != nil || !categoryBelongs {
@@ -33,12 +33,12 @@ func (p *ProductUseCase) CreateProduct(product entities.Product) error {
 	return p.productRepo.Save(product)
 }
 
-// GetProductByID получает продукт по ID
+// GetProductByID получает продукт по ID.
 func (p *ProductUseCase) GetProductByID(id uint64) (entities.Product, error) {
 	return p.productRepo.FindByID(id)
 }
 
-// UpdateProduct обновляет существующий продукт
+// UpdateProduct обновляет существующий продукт.
 func (p *ProductUseCase) UpdateProduct(product entities.Product) error {
 	categoryBelongs, err := p.storeRepo.IsCategoryAttached(product.StoreID, product.CategoryID)
 	if err != nil || !categoryBelongs {
@@ -53,7 +53,7 @@ func (p *ProductUseCase) UpdateProduct(product entities.Product) error {
 	return p.productRepo.Update(product)
 }
 
-// DeleteProduct удаляет продукт по ID
+// DeleteProduct удаляет продукт по ID.
 func (p *ProductUseCase) DeleteProduct(id uint64) error {
 	product, err := p.productRepo.FindByID(id)
 	if err != nil {
@@ -68,7 +68,9 @@ func (p *ProductUseCase) DeleteProduct(id uint64) error {
 	return p.productRepo.Delete(id)
 }
 
-// GetProductsByFilters получает все продукты по фильтрам
-func (p *ProductUseCase) GetProductsByFilters(filters entities.ProductSearchParams) ([]entities.Product, *uint64, error) {
+// GetProductsByFilters получает все продукты по фильтрам.
+func (p *ProductUseCase) GetProductsByFilters(
+	filters entities.ProductSearchParams,
+) ([]entities.Product, *uint64, error) {
 	return p.productRepo.FindProductsByParams(filters)
 }

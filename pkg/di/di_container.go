@@ -18,7 +18,7 @@ import (
 	"go.uber.org/dig"
 )
 
-var container = dig.New() //nolint:gochecknoglobals
+var container = dig.New()
 
 func Container() *dig.Container {
 	return container

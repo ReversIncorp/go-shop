@@ -5,9 +5,9 @@ PATH := $(PROJECT_BIN):$(PATH)
 GOLANGCI_LINT = $(PROJECT_BIN)/golangci-lint
 
 .PHONY: .install-linter
-#.install-linter:#
-	## INSTALL GOLANGCI-LINT ###
-	#[ -f $(PROJECT_BIN)/golangci-lint ] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(PROJECT_BIN) v1.62.2
+.install-linter:#
+	# INSTALL GOLANGCI-LINT ###
+	[ -f $(PROJECT_BIN)/golangci-lint ] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(PROJECT_BIN) v1.62.2
 
 #lint: .install-linter
 .PHONY: lint
@@ -42,3 +42,10 @@ codegen:
 
 gqlgen:
 	go run github.com/99designs/gqlgen generate
+
+
+setup-githooks:
+	touch .githooks/pre-commit
+	chmod +x .githooks/pre-commit  # Make it executable
+	git config core.hooksPath .githooks
+	echo "Git hooks directory set to .githooks"

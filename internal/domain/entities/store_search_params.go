@@ -1,6 +1,6 @@
 package entities
 
-// StoreSearchParams структура для фильтрации магазинов
+// StoreSearchParams структура для фильтрации магазинов.
 type StoreSearchParams struct {
 	CategoryID *uint64 `json:"category_id"`
 	Name       *string `json:"name"`
