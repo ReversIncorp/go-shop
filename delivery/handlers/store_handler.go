@@ -10,13 +10,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// StoreHandler обрабатывает HTTP-запросы для магазинов
+// StoreHandler обрабатывает HTTP-запросы для магазинов.
 type StoreHandler struct {
 	storeUseCase *storeUsecases.StoreUseCase
 	validator    *validator.Validate
 }
 
-// NewStoreHandler создает новый экземпляр StoreHandler
+// NewStoreHandler создает новый экземпляр StoreHandler.
 func NewStoreHandler(
 	storeUseCase *storeUsecases.StoreUseCase,
 	validator *validator.Validate,
@@ -27,7 +27,7 @@ func NewStoreHandler(
 	}
 }
 
-// CreateStore обрабатывает запрос на создание магазина
+// CreateStore обрабатывает запрос на создание магазина.
 func (h *StoreHandler) CreateStore(c echo.Context) error {
 	var store entities.Store
 
@@ -48,7 +48,7 @@ func (h *StoreHandler) CreateStore(c echo.Context) error {
 	return c.JSON(http.StatusCreated, store)
 }
 
-// GetStoreByID обрабатывает запрос на получение магазина по ID
+// GetStoreByID обрабатывает запрос на получение магазина по ID.
 func (h *StoreHandler) GetStoreByID(c echo.Context) error {
 	id := c.Param("store_id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
@@ -63,7 +63,7 @@ func (h *StoreHandler) GetStoreByID(c echo.Context) error {
 	return c.JSON(http.StatusOK, store)
 }
 
-// UpdateStore обрабатывает запрос на обновление магазина
+// UpdateStore обрабатывает запрос на обновление магазина.
 func (h *StoreHandler) UpdateStore(c echo.Context) error {
 	var store entities.Store
 	id := c.Param("store_id")
@@ -85,7 +85,7 @@ func (h *StoreHandler) UpdateStore(c echo.Context) error {
 	return c.JSON(http.StatusOK, store)
 }
 
-// DeleteStore обрабатывает запрос на удаление магазина
+// DeleteStore обрабатывает запрос на удаление магазина.
 func (h *StoreHandler) DeleteStore(c echo.Context) error {
 	id := c.Param("store_id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
@@ -99,7 +99,7 @@ func (h *StoreHandler) DeleteStore(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-// GetStoresByFilters обрабатывает запрос на получение магазинов по фильтрам
+// GetStoresByFilters обрабатывает запрос на получение магазинов по фильтрам.
 func (h *StoreHandler) GetStoresByFilters(c echo.Context) error {
 	var searchParams entities.StoreSearchParams
 
@@ -122,7 +122,7 @@ func (h *StoreHandler) GetStoresByFilters(c echo.Context) error {
 	})
 }
 
-// AttachCategoryToStore связывает категорию с магазином
+// AttachCategoryToStore связывает категорию с магазином.
 func (h *StoreHandler) AttachCategoryToStore(c echo.Context) error {
 	var request struct {
 		CategoryID uint64 `json:"category_id" validate:"required"`
@@ -145,7 +145,7 @@ func (h *StoreHandler) AttachCategoryToStore(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{"message": "Category attached to store successfully"})
 }
 
-// DetachCategoryFromStore отвязывает категорию от магазина
+// DetachCategoryFromStore отвязывает категорию от магазина.
 func (h *StoreHandler) DetachCategoryFromStore(c echo.Context) error {
 	storeIDParam := c.Param("store_id")
 	storeID, err := strconv.ParseUint(storeIDParam, 10, 64)

@@ -72,16 +72,16 @@ func (u *UserUseCase) Logout(accessToken string) error {
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		userID, ok := claims["user_id"]
+		userID, ok := claims["user_id"].(uint64)
 		if !ok {
-			return fmt.Errorf("invalid token: user_id missing or invalid")
+			return errors.New("invalid token: user_id missing or invalid")
 		}
-		sessionUUID, ok := claims["session_uuid"]
+		sessionUUID, ok := claims["session_uuid"].(string)
 		if !ok {
-			return fmt.Errorf("invalid token: session UUID missing or invalid")
+			return errors.New("invalid token: session UUID missing or invalid")
 		}
 
-		err := u.tokenRepo.DeleteSession(userID.(uint64), sessionUUID.(string))
+		err := u.tokenRepo.DeleteSession(userID, sessionUUID)
 		if err != nil {
 			return errors.New("session deletion failed")
 		}
@@ -98,22 +98,22 @@ func (u *UserUseCase) UpdateSession(refreshToken string, ctx echo.Context) (*ent
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		userID, ok := claims["user_id"]
+		userID, ok := claims["user_id"].(float64)
 		if !ok {
-			return nil, fmt.Errorf("invalid token: user_id missing or invalid")
+			return nil, errors.New("invalid token: user_id missing or invalid")
 		}
-		sessionUUID, ok := claims["session_uuid"]
+		sessionUUID, ok := claims["session_uuid"].(string)
 		if !ok {
-			return nil, fmt.Errorf("invalid token: session UUID missing or invalid")
+			return nil, errors.New("invalid token: session UUID missing or invalid")
 		}
 
-		session, err := u.createSession(userID.(uint64), sessionUUID.(string), ctx)
+		session, err := u.createSession(uint64(userID), sessionUUID, ctx)
 		if err != nil {
-			return nil, fmt.Errorf("session creation failed")
+			return nil, errors.New("session creation failed")
 		}
-		err = u.tokenRepo.SaveSession(userID.(uint64), sessionUUID.(string), session)
+		err = u.tokenRepo.SaveSession(uint64(userID), sessionUUID, session)
 		if err != nil {
-			return nil, fmt.Errorf("session saving failed")
+			return nil, errors.New("session saving failed")
 		}
 
 		return session, nil
@@ -121,7 +121,11 @@ func (u *UserUseCase) UpdateSession(refreshToken string, ctx echo.Context) (*ent
 	return nil, errors.New("invalid refresh token")
 }
 
-func (u *UserUseCase) ValidateToken(tokenString string, key []byte, tokenType enums.Token) (*jwt.Token, error) {
+func (u *UserUseCase) ValidateToken(
+	tokenString string,
+	key []byte,
+	tokenType enums.Token,
+) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -132,56 +136,71 @@ func (u *UserUseCase) ValidateToken(tokenString string, key []byte, tokenType en
 		return nil, err
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		userID, ok := claims["user_id"].(float64)
-		if !ok {
-			return nil, fmt.Errorf("invalid token: user_id missing or invalid")
-		}
-		sessionUUID, ok := claims["session_uuid"].(string)
-		if !ok {
-			return nil, fmt.Errorf("invalid token: session UUID missing or invalid")
-		}
-		exp, ok := claims["exp"].(float64)
-		if !ok {
-			return nil, fmt.Errorf("invalid token: expiration time missing")
-		}
-
-		currentTime := time.Now().Unix()
-		if int64(exp) < currentTime {
-			return nil, fmt.Errorf("token has expired")
-		}
-
-		session, err := u.tokenRepo.GetSession(uint64(userID), sessionUUID)
-		if err != nil {
-			return nil, fmt.Errorf("session not found")
-		}
-
-		if tokenType == enums.Access {
-			if session.AccessToken != tokenString {
-				return nil, fmt.Errorf("session acess token not equals to user acess token")
-			}
-		} else if tokenType == enums.Refresh {
-			if session.RefreshToken != tokenString {
-				return nil, fmt.Errorf("session refresh token not equals to user refresh token")
-			}
-		} else {
-			return nil, fmt.Errorf("invalid token type")
-		}
-
-		logrus.Infof("User ID from token: %v, Token session UUID: %v, Token type: %v", userID, sessionUUID, tokenType)
-
-		return token, nil
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, errors.New("invalid token: invalid claims")
 	}
-	return nil, errors.New("invalid token")
+	if !token.Valid {
+		return nil, errors.New("invalid token")
+	}
+	userID, ok := claims["user_id"].(float64)
+	if !ok {
+		return nil, errors.New("invalid token: user_id missing or invalid")
+	}
+	sessionUUID, ok := claims["session_uuid"].(string)
+	if !ok {
+		return nil, errors.New("invalid token: session UUID missing or invalid")
+	}
+	exp, ok := claims["exp"].(float64)
+	if !ok {
+		return nil, errors.New("invalid token: expiration time missing")
+	}
+
+	currentTime := time.Now().Unix()
+	if int64(exp) < currentTime {
+		return nil, errors.New("token has expired")
+	}
+
+	session, err := u.tokenRepo.GetSession(uint64(userID), sessionUUID)
+	if err != nil {
+		return nil, errors.New("session not found")
+	}
+	switch tokenType {
+	case enums.Access:
+		if session.AccessToken != tokenString {
+			return nil, errors.New("session acess token not equals to user acess token")
+		}
+	case enums.Refresh:
+		if session.RefreshToken != tokenString {
+			return nil, errors.New("session refresh token not equals to user refresh token")
+		}
+	default:
+		return nil, errors.New("invalid token type")
+	}
+
+	logrus.Infof("User ID from token: %v, Token session UUID: %v, Token type: %v",
+		userID,
+		sessionUUID,
+		tokenType,
+	)
+
+	return token, nil
 }
 
-// UpdateSession Реализация метода UpdateSession
-func (u *UserUseCase) createSession(userID uint64, sessionID string, ctx echo.Context) (*entities.SessionDetails, error) {
+// UpdateSession Реализация метода UpdateSession.
+func (u *UserUseCase) createSession(
+	userID uint64,
+	sessionID string,
+	ctx echo.Context,
+) (*entities.SessionDetails, error) {
 	session := &entities.SessionDetails{}
 	session.DeviceInfo = ctx.Request().Header.Get("User-Agent")
 	session.IPAddress = ctx.RealIP()
 
 	accessToken, err := GenerateToken(userID, sessionID, enums.Access, config.GetConfig().JWTKey)
+	if err != nil {
+		return nil, err
+	}
 	refreshToken, err := GenerateToken(userID, sessionID, enums.Refresh, config.GetConfig().JWTKey)
 	if err != nil {
 		return nil, err
