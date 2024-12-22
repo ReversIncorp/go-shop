@@ -13,6 +13,8 @@ import (
 	"marketplace/pkg/utils"
 	"os"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
@@ -147,7 +149,7 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 		storeUseCase = su
 		userUseCase = uu
 	}); err != nil {
-		fmt.Println("Failed to invoke handlers or use case: %w\n", err)
+		logrus.Errorf("Failed to invoke handlers or use case: %v\n", err)
 		return err
 	}
 

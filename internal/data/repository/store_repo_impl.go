@@ -167,11 +167,7 @@ func (r *storeRepositoryImpl) FindAll() ([]entities.Store, error) {
 }
 
 func (r *storeRepositoryImpl) FindStoresByParams(params entities.StoreSearchParams) ([]entities.Store, *uint64, error) {
-	query, args, err := r.buildQuery(params)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error building query: %w", err)
-	}
-
+	query, args := r.buildQuery(params)
 	stores, lastCursor, err := r.executeAndProcessQuery(query, args)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error executing or processing query: %w", err)
@@ -181,7 +177,7 @@ func (r *storeRepositoryImpl) FindStoresByParams(params entities.StoreSearchPara
 }
 
 // buildQuery генерирует SQL-запрос и параметры.
-func (r *storeRepositoryImpl) buildQuery(params entities.StoreSearchParams) (string, []interface{}, error) {
+func (r *storeRepositoryImpl) buildQuery(params entities.StoreSearchParams) (string, []interface{}) {
 	var query string
 	var conditions []string
 	var args []interface{}
@@ -218,7 +214,7 @@ func (r *storeRepositoryImpl) buildQuery(params entities.StoreSearchParams) (str
 		args = append(args, *params.Limit)
 	}
 
-	return query, args, nil
+	return query, args
 }
 
 // executeAndProcessQuery выполняет запрос и обрабатывает результаты.

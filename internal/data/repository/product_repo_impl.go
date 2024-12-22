@@ -131,11 +131,7 @@ func (r *productRepositoryImpl) Delete(id uint64) error {
 func (r *productRepositoryImpl) FindProductsByParams(
 	params entities.ProductSearchParams,
 ) ([]entities.Product, *uint64, error) {
-	query, args, err := r.buildProductQuery(params)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error building query: %w", err)
-	}
-
+	query, args := r.buildProductQuery(params)
 	rows, err := r.executeQuery(query, args)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error executing query: %w", err)
@@ -151,7 +147,7 @@ func (r *productRepositoryImpl) FindProductsByParams(
 }
 
 // Генерирует SQL-запрос и параметры.
-func (r *productRepositoryImpl) buildProductQuery(params entities.ProductSearchParams) (string, []interface{}, error) {
+func (r *productRepositoryImpl) buildProductQuery(params entities.ProductSearchParams) (string, []interface{}) {
 	query := `SELECT 
 		id, 
 		name, 
@@ -213,7 +209,7 @@ func (r *productRepositoryImpl) buildProductQuery(params entities.ProductSearchP
 		args = append(args, *params.Limit)
 	}
 
-	return query, args, nil
+	return query, args
 }
 
 // Выполняет SQL-запрос.
