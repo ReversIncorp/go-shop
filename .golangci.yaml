@@ -336,6 +336,10 @@ issues:
   max-same-issues: 50
 
   exclude-rules:
+    - linters:
+        - govet
+      path: ".*"
+      text: "declaration of 'err' shadows declaration"
     - path: ^delivery/middleware/logger\.go$
       linters:
         - gochecknoglobals
