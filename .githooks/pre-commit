@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# run sorting imports
+#make lint-fast
+
+# If we made it this far, the commit is allowed
+exit 0
