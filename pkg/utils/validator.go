@@ -30,10 +30,11 @@ func validatePassword(fl validator.FieldLevel) bool {
 		regexp.MustCompile(`[a-z]`).MatchString(password),
 		regexp.MustCompile(`[0-9]`).MatchString(password),
 		///TODO: переделать тут валидацию
-		regexp.MustCompile(`[!@#$%^&*begin:math:text$_\+\-=$end:math:text$_\+\-=$begin:math:display$$end:math:display$\{\};:'"\|\\,.<>/?]+`).MatchString(password) // Проверяем наличие хотя бы одной строчной буквы
+		regexp.MustCompile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_\\+\\-=\n$begin:math:display"+
+			"$$end:math:display${};':\"\\\\|,.<>\\/?]).{8,}$").MatchString(password)
+	// Проверяем наличие хотя бы одной строчной буквы.
 	// Проверяем наличие хотя бы одной цифры.
-	// Проверяем наличие хотя бы одного специального символа
-
+	// Проверяем наличие хотя бы одного специального символа.
 	// Пароль должен содержать заглавную, строчную букву, цифру и спец символ.
 	return hasUppercase && hasLowercase && hasDigit && hasSpecialChar
 }

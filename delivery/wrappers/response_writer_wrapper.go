@@ -15,7 +15,7 @@ type ResponseWriterWrapper struct {
 	statusCode int
 }
 
-// NewResponseWriterWrapper создает обертку для http.ResponseWriter
+// NewResponseWriterWrapper создает обертку для http.ResponseWriter.
 func NewResponseWriterWrapper(w http.ResponseWriter) ResponseWriterWrapper {
 	var buf bytes.Buffer
 	return ResponseWriterWrapper{

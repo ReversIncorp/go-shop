@@ -72,18 +72,18 @@ func (u *UserUseCase) Logout(accessToken string) error {
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		userID, ok := claims["user_id"].(float64)
+		userID, ok := claims["user_id"]
 		if !ok {
 			return fmt.Errorf("invalid token: user_id missing or invalid")
 		}
-		sessionUUID, ok := claims["session_uuid"].(string)
+		sessionUUID, ok := claims["session_uuid"]
 		if !ok {
 			return fmt.Errorf("invalid token: session UUID missing or invalid")
 		}
 
-		err := u.tokenRepo.DeleteSession(uint64(userID), sessionUUID)
+		err := u.tokenRepo.DeleteSession(userID.(uint64), sessionUUID.(string))
 		if err != nil {
-			return fmt.Errorf("session deletion failed")
+			return errors.New("session deletion failed")
 		}
 
 		return nil
@@ -98,20 +98,20 @@ func (u *UserUseCase) UpdateSession(refreshToken string, ctx echo.Context) (*ent
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		userID, ok := claims["user_id"].(float64)
+		userID, ok := claims["user_id"]
 		if !ok {
 			return nil, fmt.Errorf("invalid token: user_id missing or invalid")
 		}
-		sessionUUID, ok := claims["session_uuid"].(string)
+		sessionUUID, ok := claims["session_uuid"]
 		if !ok {
 			return nil, fmt.Errorf("invalid token: session UUID missing or invalid")
 		}
 
-		session, err := u.createSession(uint64(userID), sessionUUID, ctx)
+		session, err := u.createSession(userID.(uint64), sessionUUID.(string), ctx)
 		if err != nil {
 			return nil, fmt.Errorf("session creation failed")
 		}
-		err = u.tokenRepo.SaveSession(uint64(userID), sessionUUID, session)
+		err = u.tokenRepo.SaveSession(userID.(uint64), sessionUUID.(string), session)
 		if err != nil {
 			return nil, fmt.Errorf("session saving failed")
 		}

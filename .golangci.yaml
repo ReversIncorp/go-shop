@@ -344,6 +344,10 @@ issues:
       linters:
         - gochecknoglobals
       text: once
+    - path: ^pkg/di/di_container\.go$
+      linters:
+        - gochecknoglobals
+      text: container
     - source: "(noinspection|TODO)"
       linters: [ godot ]
     - source: "//noinspection"

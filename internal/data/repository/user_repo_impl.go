@@ -24,7 +24,7 @@ func (r *userRepositoryImpl) Create(user entities.User) (uint64, error) {
 	err := r.db.QueryRow(query, user.Email).Scan(&existingUserID)
 	if err == nil {
 		return 0, errors.New("user already exists")
-	} else if err != sql.ErrNoRows {
+	} else if !errors.Is(err, sql.ErrNoRows) {
 		return 0, fmt.Errorf("failed to check existing user: %w", err)
 	}
 
@@ -65,7 +65,7 @@ func (r *userRepositoryImpl) FindByEmail(email string) (entities.User, error) {
 		&user.IsSeller)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return entities.User{}, errors.New("user not found")
 		}
 		return entities.User{}, err
@@ -90,7 +90,7 @@ func (r *userRepositoryImpl) FindByID(id uint64) (entities.User, error) {
 		&user.IsSeller)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return entities.User{}, errors.New("user not found")
 		}
 		return entities.User{}, err

@@ -89,7 +89,7 @@ func (r *storeRepositoryImpl) FindByID(id uint64) (entities.Store, error) {
 			&store.CreatedAt,
 			&store.UpdatedAt)
 
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return entities.Store{}, errors.New("store not found")
 	}
 	if err != nil {
