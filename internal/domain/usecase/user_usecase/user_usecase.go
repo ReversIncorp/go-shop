@@ -132,7 +132,7 @@ func (u *UserUseCase) ValidateToken(
 		return key, nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, errorHandling.ErrInvalidExpiredToken
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
