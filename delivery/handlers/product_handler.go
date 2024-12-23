@@ -3,7 +3,7 @@ package handlers
 import (
 	"marketplace/internal/domain/entities"
 	productUsecas "marketplace/internal/domain/usecase/product_usecase"
-	"marketplace/pkg/errors"
+	"marketplace/pkg/error_handling"
 	"net/http"
 	"strconv"
 
@@ -24,13 +24,13 @@ func NewProductHandler(productUseCase *productUsecas.ProductUseCase) *ProductHan
 func (h *ProductHandler) CreateProduct(c echo.Context) error {
 	var product entities.Product
 	if err := c.Bind(&product); err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	id := c.Param("store_id")
 	storeID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	product.StoreID = storeID
@@ -46,7 +46,7 @@ func (h *ProductHandler) GetProductByID(c echo.Context) error {
 	id := c.Param("id")
 	productID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 	product, err := h.productUseCase.GetProductByID(productID)
 	if err != nil {
@@ -63,17 +63,17 @@ func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 	id := c.Param("id")
 	productID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	sid := c.Param("store_id")
 	storeID, err := strconv.ParseUint(sid, 10, 64)
 	if err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	if err = c.Bind(&product); err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	product.StoreID = storeID
@@ -91,7 +91,7 @@ func (h *ProductHandler) DeleteProduct(c echo.Context) error {
 	id := c.Param("id")
 	productID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	if err = h.productUseCase.DeleteProduct(productID); err != nil {
@@ -104,7 +104,7 @@ func (h *ProductHandler) GetProductsByFilters(c echo.Context) error {
 	var searchParams entities.ProductSearchParams
 
 	if err := c.Bind(&searchParams); err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	products, err := h.productUseCase.GetProductsByFilters(searchParams)

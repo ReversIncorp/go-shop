@@ -1,8 +1,7 @@
-package errors
+package error_handling
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -22,12 +21,12 @@ func FatalErrorWithTracer(message string, err error) {
 	redColor := "\033[31m"
 	resetColor := "\033[0m"
 	if wrappedErr := tracerr.Wrap(err); wrappedErr != nil {
-		log.Printf("%s[ERROR]%s %s:\n", redColor, resetColor, message)
+		logrus.Printf("%s[ERROR]%s %s:\n", redColor, resetColor, message)
 		printFilteredSourceColor(wrappedErr, "marketplace")
-		log.Fatalf("%s[ERROR DETAILS]%s: %v", redColor, resetColor, err) // Завершаем выполнение
+		logrus.Fatalf("%s[ERROR DETAILS]%s: %v", redColor, resetColor, err) // Завершаем выполнение
 	} else {
-		log.Printf("%s[ERROR]%s %s:\n", redColor, resetColor, message)
-		log.Fatalf("%s[ERROR DETAILS]%s: %v", redColor, resetColor, err) // Завершаем выполнение
+		logrus.Printf("%s[ERROR]%s %s:\n", redColor, resetColor, message)
+		logrus.Fatalf("%s[ERROR DETAILS]%s: %v", redColor, resetColor, err) // Завершаем выполнение
 	}
 }
 

@@ -2,7 +2,7 @@ package middleware
 
 import (
 	usecase "marketplace/internal/domain/usecase/store_usecase"
-	"marketplace/pkg/errors"
+	"marketplace/pkg/error_handling"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -14,14 +14,14 @@ func StoreAdminMiddleware(storeUsecase *usecase.StoreUseCase) echo.MiddlewareFun
 		return func(c echo.Context) error {
 			userID, ok := c.Get("user_id").(float64)
 			if !ok {
-				return errors.ErrUnauthorizedAccess
+				return error_handling.ErrUnauthorizedAccess
 			}
 			uid := uint64(userID)
 
 			storeIDParam := c.Param("store_id")
 			storeID, err := strconv.ParseUint(storeIDParam, 10, 64)
 			if err != nil {
-				return errors.ErrInvalidInput
+				return error_handling.ErrInvalidInput
 			}
 
 			isAdmin, err := storeUsecase.IsUserStoreAdmin(storeID, uid)
@@ -29,7 +29,7 @@ func StoreAdminMiddleware(storeUsecase *usecase.StoreUseCase) echo.MiddlewareFun
 				return err
 			}
 			if !isAdmin {
-				return errors.ErrUserNotAdminStore
+				return error_handling.ErrUserNotAdminStore
 			}
 
 			return next(c)

@@ -3,7 +3,7 @@ package productUsecase
 import (
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
-	errorResponses "marketplace/pkg/errors"
+	errorResponses "marketplace/pkg/error_handling"
 )
 
 // ProductUseCase реализует интерфейс ProductUseCase

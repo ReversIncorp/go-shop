@@ -5,7 +5,7 @@ import (
 	"errors"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
-	errorResponses "marketplace/pkg/errors"
+	errorResponses "marketplace/pkg/error_handling"
 
 	"github.com/ztrue/tracerr"
 )

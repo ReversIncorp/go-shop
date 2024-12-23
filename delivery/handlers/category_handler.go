@@ -3,7 +3,7 @@ package handlers
 import (
 	"marketplace/internal/domain/entities"
 	categoryUsecases "marketplace/internal/domain/usecase/category_usecase"
-	"marketplace/pkg/errors"
+	"marketplace/pkg/error_handling"
 	"net/http"
 	"strconv"
 
@@ -25,13 +25,13 @@ func (h *CategoryHandler) CreateCategory(c echo.Context) error {
 	var category entities.Category
 
 	if err := c.Bind(&category); err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	userID := c.Get("user_id")
 	uid, ok := userID.(float64)
 	if !ok || userID == nil {
-		return errors.ErrMissingUserFromToken
+		return error_handling.ErrMissingUserFromToken
 	}
 
 	if err := h.categoryUseCase.CreateCategory(category, uint64(uid)); err != nil {
@@ -46,13 +46,13 @@ func (h *CategoryHandler) DeleteCategory(c echo.Context) error {
 	id := c.Param("id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	userID := c.Get("user_id")
 	uid, ok := userID.(float64)
 	if !ok || userID == nil {
-		return errors.ErrMissingUserFromToken
+		return error_handling.ErrMissingUserFromToken
 	}
 
 	if err = h.categoryUseCase.DeleteCategory(uint64ID, uint64(uid)); err != nil {
@@ -66,12 +66,12 @@ func (h *CategoryHandler) GetAllCategoriesByStore(c echo.Context) error {
 	id := c.Param("store_id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	categories, err := h.categoryUseCase.GetAllCategoriesByStore(uint64ID)
 	if err != nil {
-		return errors.ErrInternalServerError
+		return error_handling.ErrInternalServerError
 	}
 
 	return c.JSON(http.StatusOK, categories)
@@ -82,7 +82,7 @@ func (h *CategoryHandler) GetCategoryByID(c echo.Context) error {
 	id := c.Param("id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	category, err := h.categoryUseCase.GetCategoryByID(uint64ID)
@@ -97,7 +97,7 @@ func (h *CategoryHandler) GetCategoryByID(c echo.Context) error {
 func (h *CategoryHandler) GetAllCategories(c echo.Context) error {
 	category, err := h.categoryUseCase.GetAllCategories()
 	if err != nil {
-		return errors.ErrInternalServerError
+		return error_handling.ErrInternalServerError
 	}
 
 	return c.JSON(http.StatusOK, category)

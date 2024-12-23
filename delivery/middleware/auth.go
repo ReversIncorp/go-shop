@@ -3,7 +3,7 @@ package middleware
 import (
 	"marketplace/config"
 	userUsecase "marketplace/internal/domain/usecase/user_ucecase"
-	"marketplace/pkg/errors"
+	"marketplace/pkg/error_handling"
 
 	"strings"
 
@@ -17,12 +17,12 @@ func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// Извлекаем токен из заголовков Authorization
 		authHeader := c.Request().Header.Get("Authorization")
 		if authHeader == "" {
-			return errors.ErrMissingToken
+			return error_handling.ErrMissingToken
 		}
 		// Проверяем формат токена (Bearer)
 		tokenParts := strings.Split(authHeader, " ")
 		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-			return errors.ErrInvalidTokenFormat
+			return error_handling.ErrInvalidTokenFormat
 		}
 
 		// Получаем сам JWT токен
@@ -31,13 +31,13 @@ func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// Проверяем валидность Access токена
 		token, err := userUsecase.ValidateAccessToken(tokenString, config.GetConfig().JWTKey)
 		if err != nil {
-			return errors.ErrInvalidExpiredToken
+			return error_handling.ErrInvalidExpiredToken
 		}
 
 		// Извлекаем информацию о пользователе из токена
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok || !token.Valid {
-			return errors.ErrInvalidTokenClaims
+			return error_handling.ErrInvalidTokenClaims
 		}
 
 		// Устанавливаем user_id в контекст для последующего использования в контроллерах.

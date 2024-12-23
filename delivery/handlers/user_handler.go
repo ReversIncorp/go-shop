@@ -3,7 +3,7 @@ package handlers
 import (
 	"marketplace/internal/domain/entities"
 	userUsecase "marketplace/internal/domain/usecase/user_ucecase"
-	"marketplace/pkg/errors"
+	"marketplace/pkg/error_handling"
 	"net/http"
 	"strconv"
 
@@ -27,10 +27,10 @@ func (h *UserHandler) Register(c echo.Context) error {
 	var user entities.User
 
 	if err := c.Bind(&user); err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 	if err := h.validator.Struct(user); err != nil {
-		return errors.ErrValidationFailed
+		return error_handling.ErrValidationFailed
 	}
 
 	// Вызов метода Register и получение токенов
@@ -47,10 +47,10 @@ func (h *UserHandler) Register(c echo.Context) error {
 func (h *UserHandler) Login(c echo.Context) error {
 	var credentials entities.LoginCredentials
 	if err := c.Bind(&credentials); err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 	if err := h.validator.Struct(credentials); err != nil {
-		return errors.ErrValidationFailed
+		return error_handling.ErrValidationFailed
 	}
 
 	// Вызов метода Login и получение токенов
@@ -68,7 +68,7 @@ func (h *UserHandler) GetUserByID(c echo.Context) error {
 	id := c.Param("id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 	user, err := h.userUseCase.GetUserByID(uint64ID)
 	if err != nil {
@@ -83,7 +83,7 @@ func (h *UserHandler) UpdateToken(c echo.Context) error {
 	id := c.Param("id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 	user, err := h.userUseCase.GetUserByID(uint64ID)
 	if err != nil {

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"marketplace/pkg/di"
-	"marketplace/pkg/errors"
+	"marketplace/pkg/error_handling"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -22,23 +22,23 @@ func main() {
 
 	// Регистрация баз данных
 	if err = di.RegisterDatabases(container); err != nil {
-		errors.FatalErrorWithTracer("Failed to register databases", err)
+		error_handling.FatalErrorWithTracer("Failed to register databases", err)
 	}
 
 	// Регистрация всех зависимостей
 	err = di.RegisterDependencies(container)
 	if err != nil {
-		errors.FatalErrorWithTracer("Failed to register dependencies", err)
+		error_handling.FatalErrorWithTracer("Failed to register dependencies", err)
 	}
 
 	// Регистрация midleware
 	if err = di.RegisterMiddleware(container, e); err != nil {
-		errors.FatalErrorWithTracer("Failed to register midleware", err)
+		error_handling.FatalErrorWithTracer("Failed to register midleware", err)
 	}
 
 	// Регистрация маршрутов
 	if err = di.RegisterRoutes(container, e); err != nil {
-		errors.FatalErrorWithTracer("Failed to register routes", err)
+		error_handling.FatalErrorWithTracer("Failed to register routes", err)
 	}
 	// Запуск сервера
 	e.Logger.Fatal(e.Start(":8080"))

@@ -3,7 +3,7 @@ package handlers
 import (
 	"marketplace/internal/domain/entities"
 	storeUsecases "marketplace/internal/domain/usecase/store_usecase"
-	"marketplace/pkg/errors"
+	"marketplace/pkg/error_handling"
 	"net/http"
 	"strconv"
 
@@ -25,17 +25,17 @@ func (h *StoreHandler) CreateStore(c echo.Context) error {
 	var store entities.Store
 
 	if err := c.Bind(&store); err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	userID := c.Get("user_id")
 	uid, ok := userID.(float64)
 	if !ok || userID == nil {
-		return errors.ErrMissingUserFromToken
+		return error_handling.ErrMissingUserFromToken
 	}
 
 	if err := h.storeUseCase.CreateStore(store, uint64(uid)); err != nil {
-		return errors.ErrInternalServerError
+		return error_handling.ErrInternalServerError
 	}
 
 	return c.JSON(http.StatusCreated, store)
@@ -46,11 +46,11 @@ func (h *StoreHandler) GetStoreByID(c echo.Context) error {
 	id := c.Param("store_id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 	store, err := h.storeUseCase.GetStoreByID(uint64ID)
 	if err != nil {
-		return errors.ErrStoreNotFound
+		return error_handling.ErrStoreNotFound
 	}
 
 	return c.JSON(http.StatusOK, store)
@@ -62,17 +62,17 @@ func (h *StoreHandler) UpdateStore(c echo.Context) error {
 	id := c.Param("store_id")
 	storeID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	if err = c.Bind(&store); err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	store.ID = storeID
 
 	if err = h.storeUseCase.UpdateStore(store); err != nil {
-		return errors.ErrInternalServerError
+		return error_handling.ErrInternalServerError
 	}
 
 	return c.JSON(http.StatusOK, store)
@@ -83,7 +83,7 @@ func (h *StoreHandler) DeleteStore(c echo.Context) error {
 	id := c.Param("store_id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	if err = h.storeUseCase.DeleteStore(uint64ID); err != nil {
@@ -111,11 +111,11 @@ func (h *StoreHandler) AttachCategoryToStore(c echo.Context) error {
 	storeIDParam := c.Param("store_id")
 	storeID, err := strconv.ParseUint(storeIDParam, 10, 64)
 	if err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	if err = c.Bind(&request); err != nil || request.CategoryID == 0 {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	if err = h.storeUseCase.AttachCategoryToStore(storeID, request.CategoryID); err != nil {
@@ -130,13 +130,13 @@ func (h *StoreHandler) DetachCategoryFromStore(c echo.Context) error {
 	storeIDParam := c.Param("store_id")
 	storeID, err := strconv.ParseUint(storeIDParam, 10, 64)
 	if err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	categoryIDParam := c.Param("category_id")
 	categoryID, err := strconv.ParseUint(categoryIDParam, 10, 64)
 	if err != nil {
-		return errors.ErrInvalidInput
+		return error_handling.ErrInvalidInput
 	}
 
 	if err = h.storeUseCase.DetachCategoryFromStore(storeID, categoryID); err != nil {
