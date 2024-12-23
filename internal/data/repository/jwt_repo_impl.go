@@ -6,12 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"marketplace/internal/domain/entities"
-	"marketplace/internal/domain/enums"
 	"marketplace/internal/domain/repository"
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/labstack/echo/v4"
 	"github.com/ztrue/tracerr"
 )
 

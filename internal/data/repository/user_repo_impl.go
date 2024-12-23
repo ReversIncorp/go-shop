@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
-	errorResponses "marketplace/pkg/error_handling"
+	"marketplace/pkg/error_handling"
 
 	"github.com/ztrue/tracerr"
 )
@@ -45,7 +45,7 @@ func (r *userRepositoryImpl) Create(user entities.User) (uint64, error) {
 		user.IsSeller).Scan(&newUserID)
 
 	if err != nil {
-		return 0,  tracerr.Wrap(fmt.Errorf("failed to create user: %w", err))
+		return 0, tracerr.Wrap(fmt.Errorf("failed to create user: %w", err))
 	}
 
 	return newUserID, nil
@@ -69,7 +69,7 @@ func (r *userRepositoryImpl) FindByEmail(email string) (entities.User, error) {
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return entities.User{}, errorResponses.ErrUserNotFound
+			return entities.User{}, errorHandling.ErrUserNotFound
 		}
 		return entities.User{}, tracerr.Wrap(err)
 	}
@@ -94,7 +94,7 @@ func (r *userRepositoryImpl) FindByID(id uint64) (entities.User, error) {
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return entities.User{}, errorResponses.ErrUserNotFound
+			return entities.User{}, errorHandling.ErrUserNotFound
 		}
 		return entities.User{}, err
 	}

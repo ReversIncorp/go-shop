@@ -3,7 +3,7 @@ package categoryusecase
 import (
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
-	errorResponses "marketplace/pkg/error_handling"
+	"marketplace/pkg/error_handling"
 )
 
 type CategoryUseCase struct {
@@ -24,7 +24,7 @@ func NewCategoryUseCase(
 func (c *CategoryUseCase) CreateCategory(category entities.Category, uid uint64) error {
 	userData, err := c.userRepo.FindByID(uid)
 	if err != nil || !userData.IsSeller {
-		return errorResponses.ErrUserNotSeller
+		return errorHandling.ErrUserNotSeller
 	}
 
 	err = c.categoryRepo.Save(category)
@@ -42,12 +42,12 @@ func (c *CategoryUseCase) GetCategoryByID(id uint64) (entities.Category, error) 
 func (c *CategoryUseCase) DeleteCategory(id, uid uint64) error {
 	userData, err := c.userRepo.FindByID(uid)
 	if err != nil || !userData.IsSeller {
-		return errorResponses.ErrUserNotSeller
+		return errorHandling.ErrUserNotSeller
 	}
 
 	exists, err := c.categoryRepo.IsExist(id)
 	if err != nil || !exists {
-		return errorResponses.ErrCategoryNotFound
+		return errorHandling.ErrCategoryNotFound
 	}
 
 	err = c.categoryRepo.Delete(id)

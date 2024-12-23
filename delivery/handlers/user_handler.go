@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"marketplace/internal/domain/entities"
-	userUsecase "marketplace/internal/domain/usecase/user_ucecase"
+	userUsecase "marketplace/internal/domain/usecase/user_usecase"
 	"marketplace/pkg/error_handling"
 	"net/http"
 	"strconv"
@@ -27,10 +27,10 @@ func (h *UserHandler) Register(c echo.Context) error {
 	var user entities.User
 
 	if err := c.Bind(&user); err != nil {
-		return error_handling.ErrInvalidInput
+		return errorHandling.ErrInvalidInput
 	}
 	if err := h.validator.Struct(user); err != nil {
-		return error_handling.ErrValidationFailed
+		return errorHandling.ErrValidationFailed
 	}
 
 	// Вызов метода Register и получение токенов
@@ -47,10 +47,10 @@ func (h *UserHandler) Register(c echo.Context) error {
 func (h *UserHandler) Login(c echo.Context) error {
 	var credentials entities.LoginCredentials
 	if err := c.Bind(&credentials); err != nil {
-		return error_handling.ErrInvalidInput
+		return errorHandling.ErrInvalidInput
 	}
 	if err := h.validator.Struct(credentials); err != nil {
-		return error_handling.ErrValidationFailed
+		return errorHandling.ErrValidationFailed
 	}
 
 	// Вызов метода Login и получение токенов
@@ -68,7 +68,7 @@ func (h *UserHandler) GetUserByID(c echo.Context) error {
 	id := c.Param("id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return error_handling.ErrInvalidInput
+		return errorHandling.ErrInvalidInput
 	}
 	user, err := h.userUseCase.GetUserByID(uint64ID)
 	if err != nil {
@@ -85,8 +85,7 @@ func (h *UserHandler) RefreshSession(c echo.Context) error {
 	}
 
 	if err := c.Bind(&request); err != nil {
-		//TODO: подставить коды ошибок
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid refresh token"})
+		return errorHandling.ErrMissingToken
 	}
 
 	session, err := h.userUseCase.UpdateSession(request.Token, c)
@@ -102,7 +101,7 @@ func (h *UserHandler) Logout(c echo.Context) error {
 		Token string `json:"access_token" validate:"required"`
 	}
 	if err := c.Bind(&request); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid access token"})
+		return errorHandling.ErrMissingToken
 	}
 
 	err := h.userUseCase.Logout(request.Token)

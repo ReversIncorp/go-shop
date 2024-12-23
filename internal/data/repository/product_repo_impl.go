@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
-	errorResponses "marketplace/pkg/error_handling"
+	"marketplace/pkg/error_handling"
 	"strings"
 	"time"
 
@@ -77,7 +77,7 @@ func (r *productRepositoryImpl) FindByID(id uint64) (entities.Product, error) {
 			&product.UpdatedAt)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return entities.Product{}, errorResponses.ErrProductNotFound
+		return entities.Product{}, errorHandling.ErrProductNotFound
 	}
 	if err != nil {
 		return entities.Product{}, tracerr.Wrap(err)
@@ -90,7 +90,7 @@ func (r *productRepositoryImpl) Update(product entities.Product) error {
 	var existingProductID int64
 	err := r.db.QueryRow("SELECT id FROM products WHERE id = $1", product.ID).Scan(&existingProductID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return errorResponses.ErrProductNotFound
+		return errorHandling.ErrProductNotFound
 	}
 	if err != nil {
 		return tracerr.Wrap(err)

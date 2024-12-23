@@ -14,13 +14,13 @@ func ErrorHandlerMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		if err == nil {
 			return nil
 		}
-		if appErr, ok := err.(*error_handling.ErrorResponse); ok {
+		if appErr, ok := err.(*errorHandling.ErrorResponse); ok {
 			return c.JSON(appErr.Code, appErr)
 		}
-		error_handling.LogErrorWithTracer(err) // Логируем ошибку со стектрейсом.
-		return c.JSON(http.StatusInternalServerError, &error_handling.ErrorResponse{
-			Code:    error_handling.ErrInternalServerError.Code,
-			Details: error_handling.ErrInternalServerError.Details,
+		errorHandling.LogErrorWithTracer(err) // Логируем ошибку со стектрейсом.
+		return c.JSON(http.StatusInternalServerError, &errorHandling.ErrorResponse{
+			Code:    errorHandling.ErrInternalServerError.Code,
+			Details: errorHandling.ErrInternalServerError.Details,
 		})
 
 	}

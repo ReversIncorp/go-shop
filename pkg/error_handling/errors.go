@@ -1,4 +1,4 @@
-package error_handling
+package errorHandling
 
 import (
 	"net/http"
@@ -29,6 +29,7 @@ var (
 	ErrUserNotAdminStore  = NewErrorResponse(http.StatusForbidden, "Forbidden: user is not admin of this store", nil)
 
 	ErrMissingUserFromToken = NewErrorResponse(http.StatusBadRequest, "Invalid or missing user from token", nil)
+	ErrInvalidTokenType     = NewErrorResponse(http.StatusUnauthorized, "Invalid token type", nil)
 	ErrMissingToken         = NewErrorResponse(http.StatusUnauthorized, "Missing token", nil)
 	ErrInvalidTokenFormat   = NewErrorResponse(http.StatusUnauthorized, "Invalid token format", nil)
 	ErrInvalidExpiredToken  = NewErrorResponse(http.StatusUnauthorized, "Invalid or expired token", nil)

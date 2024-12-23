@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
+	"marketplace/pkg/error_handling"
 	"strings"
-	errorResponses "marketplace/pkg/error_handling"
 	"time"
 
 	"github.com/ztrue/tracerr"
@@ -99,7 +99,7 @@ func (r *storeRepositoryImpl) FindByID(id uint64) (entities.Store, error) {
 			&store.UpdatedAt)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return entities.Store{}, errorResponses.ErrStoreNotFound
+		return entities.Store{}, errorHandling.ErrStoreNotFound
 	}
 	if err != nil {
 		return entities.Store{}, tracerr.Wrap(err)
@@ -227,7 +227,7 @@ func (r *storeRepositoryImpl) executeAndProcessQuery(
 ) ([]entities.Store, *uint64, error) {
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
-		return nil, nil, tracerr.Wrap(mt.Errorf("error executing query: %w", err))
+		return nil, nil, tracerr.Wrap(fmt.Errorf("error executing query: %w", err))
 	}
 	defer rows.Close()
 

@@ -14,14 +14,14 @@ func StoreAdminMiddleware(storeUsecase *usecase.StoreUseCase) echo.MiddlewareFun
 		return func(c echo.Context) error {
 			userID, ok := c.Get("user_id").(float64)
 			if !ok {
-				return error_handling.ErrUnauthorizedAccess
+				return errorHandling.ErrUnauthorizedAccess
 			}
 			uid := uint64(userID)
 
 			storeIDParam := c.Param("store_id")
 			storeID, err := strconv.ParseUint(storeIDParam, 10, 64)
 			if err != nil {
-				return error_handling.ErrInvalidInput
+				return errorHandling.ErrInvalidInput
 			}
 
 			isAdmin, err := storeUsecase.IsUserStoreAdmin(storeID, uid)
@@ -29,7 +29,7 @@ func StoreAdminMiddleware(storeUsecase *usecase.StoreUseCase) echo.MiddlewareFun
 				return err
 			}
 			if !isAdmin {
-				return error_handling.ErrUserNotAdminStore
+				return errorHandling.ErrUserNotAdminStore
 			}
 
 			return next(c)

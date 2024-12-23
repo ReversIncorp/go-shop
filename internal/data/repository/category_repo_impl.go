@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
-	errorResponses "marketplace/pkg/error_handling"
+	"marketplace/pkg/error_handling"
 	"time"
 
 	"github.com/ztrue/tracerr"
@@ -111,7 +111,7 @@ func (r *categoryRepositoryImpl) FindByID(id uint64) (entities.Category, error) 
 		)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return entities.Category{}, errorResponses.ErrCategoryNotFound
+		return entities.Category{}, errorHandling.ErrCategoryNotFound
 	}
 	if err != nil {
 		return entities.Category{}, err

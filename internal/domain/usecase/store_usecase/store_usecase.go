@@ -4,7 +4,7 @@ import (
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
 
-	errorResponses "marketplace/pkg/error_handling"
+	"marketplace/pkg/error_handling"
 )
 
 // StoreUseCase реализует интерфейс StoreUseCase.
@@ -43,7 +43,7 @@ func (s *StoreUseCase) UpdateStore(store entities.Store) error {
 func (s *StoreUseCase) DeleteStore(id uint64) error {
 	storeExists, err := s.storeRepo.IsExist(id)
 	if err != nil || !storeExists {
-		return errorResponses.ErrStoreNotFound
+		return errorHandling.ErrStoreNotFound
 	}
 
 	return s.storeRepo.Delete(id)
@@ -58,7 +58,7 @@ func (s *StoreUseCase) GetAllStores() ([]entities.Store, error) {
 func (s *StoreUseCase) IsUserStoreAdmin(storeID uint64, uid uint64) (bool, error) {
 	storeExists, err := s.storeRepo.IsExist(storeID)
 	if err != nil || !storeExists {
-		return false, errorResponses.ErrStoreNotFound
+		return false, errorHandling.ErrStoreNotFound
 	}
 
 	return s.storeRepo.IsUserStoreAdmin(storeID, uid)
@@ -68,12 +68,12 @@ func (s *StoreUseCase) IsUserStoreAdmin(storeID uint64, uid uint64) (bool, error
 func (s *StoreUseCase) AttachCategoryToStore(storeID, categoryID uint64) error {
 	categoryExist, err := s.categoryRepo.IsExist(categoryID)
 	if err != nil || !categoryExist {
-		return errorResponses.ErrCategoryNotFound
+		return errorHandling.ErrCategoryNotFound
 	}
 
 	isAttached, err := s.storeRepo.IsCategoryAttached(storeID, categoryID)
 	if err != nil || isAttached {
-		return errorResponses.ErrCategoryAttached
+		return errorHandling.ErrCategoryAttached
 	}
 
 	return s.storeRepo.AttachCategory(storeID, categoryID)
@@ -83,12 +83,12 @@ func (s *StoreUseCase) AttachCategoryToStore(storeID, categoryID uint64) error {
 func (s *StoreUseCase) DetachCategoryFromStore(storeID, categoryID uint64) error {
 	categoryExist, err := s.categoryRepo.IsExist(categoryID)
 	if err != nil || !categoryExist {
-		return errorResponses.ErrCategoryNotFound
+		return errorHandling.ErrCategoryNotFound
 	}
 
 	isAttached, err := s.storeRepo.IsCategoryAttached(storeID, categoryID)
 	if err != nil || !isAttached {
-		return errorResponses.ErrCategoryNotAttached
+		return errorHandling.ErrCategoryNotAttached
 	}
 
 	return s.storeRepo.DetachCategory(storeID, categoryID)

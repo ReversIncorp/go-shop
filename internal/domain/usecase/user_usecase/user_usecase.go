@@ -1,11 +1,11 @@
-package userUsecase
+package userusecase
 
 import (
-	"errors"
 	"marketplace/config"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/enums"
 	"marketplace/internal/domain/repository"
+	"marketplace/pkg/error_handling"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -13,8 +13,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 )
-
-//TODO error codes here
 
 type UserUseCase struct {
 	userRepo  repository.UserRepository
@@ -30,7 +28,7 @@ func NewUserUseCase(userRepo repository.UserRepository, tokenRepo repository.JWT
 func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.SessionDetails, error) {
 	existingUser, err := u.userRepo.FindByEmail(user.Email)
 	if err == nil && existingUser.ID != 0 {
-		return nil, errors.New("user already exists")
+		return nil, errorHandling.ErrUserExists
 	}
 
 	userID, err := u.userRepo.Create(user)
@@ -50,7 +48,7 @@ func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.
 func (u *UserUseCase) Login(email, password string, ctx echo.Context) (*entities.SessionDetails, error) {
 	user, err := u.userRepo.FindByEmail(email)
 	if err != nil || user.Password != password { // Здесь должна быть логика хэширования пароля
-		return nil, errors.New("invalid credentials")
+		return nil, errorHandling.ErrInvalidCredentials
 	}
 
 	tokens, err := u.createSession(user.ID, uuid.New().String(), ctx)
@@ -75,21 +73,21 @@ func (u *UserUseCase) Logout(accessToken string) error {
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		userID, ok := claims["user_id"].(uint64)
 		if !ok {
-			return errors.New("invalid token: user_id missing or invalid")
+			return errorHandling.ErrInvalidTokenFormat
 		}
 		sessionUUID, ok := claims["session_uuid"].(string)
 		if !ok {
-			return errors.New("invalid token: session UUID missing or invalid")
+			return errorHandling.ErrInvalidTokenFormat
 		}
 
 		err := u.tokenRepo.DeleteSession(userID, sessionUUID)
 		if err != nil {
-			return errors.New("session deletion failed")
+			return err
 		}
 
 		return nil
 	}
-	return errors.New("invalid access token")
+	return errorHandling.ErrInvalidExpiredToken
 }
 
 func (u *UserUseCase) UpdateSession(refreshToken string, ctx echo.Context) (*entities.SessionDetails, error) {
@@ -101,25 +99,25 @@ func (u *UserUseCase) UpdateSession(refreshToken string, ctx echo.Context) (*ent
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		userID, ok := claims["user_id"].(float64)
 		if !ok {
-			return nil, errors.New("invalid token: user_id missing or invalid")
+			return nil, errorHandling.ErrInvalidTokenFormat
 		}
 		sessionUUID, ok := claims["session_uuid"].(string)
 		if !ok {
-			return nil, errors.New("invalid token: session UUID missing or invalid")
+			return nil, errorHandling.ErrInvalidTokenFormat
 		}
 
 		session, err := u.createSession(uint64(userID), sessionUUID, ctx)
 		if err != nil {
-			return nil, errors.New("session creation failed")
+			return nil, err
 		}
 		err = u.tokenRepo.SaveSession(uint64(userID), sessionUUID, session)
 		if err != nil {
-			return nil, errors.New("session saving failed")
+			return nil, err
 		}
 
 		return session, nil
 	}
-	return nil, errors.New("invalid refresh token")
+	return nil, errorHandling.ErrInvalidExpiredToken
 }
 
 func (u *UserUseCase) ValidateToken(
@@ -129,7 +127,7 @@ func (u *UserUseCase) ValidateToken(
 ) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			return nil, errorHandling.ErrInvalidExpiredToken
 		}
 		return key, nil
 	})
@@ -139,44 +137,44 @@ func (u *UserUseCase) ValidateToken(
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, errors.New("invalid token: invalid claims")
+		return nil, errorHandling.ErrInvalidTokenClaims
 	}
 	if !token.Valid {
-		return nil, errors.New("invalid token")
+		return nil, errorHandling.ErrInvalidTokenClaims
 	}
 	userID, ok := claims["user_id"].(float64)
 	if !ok {
-		return nil, errors.New("invalid token: user_id missing or invalid")
+		return nil, errorHandling.ErrInvalidTokenClaims
 	}
 	sessionUUID, ok := claims["session_uuid"].(string)
 	if !ok {
-		return nil, errors.New("invalid token: session UUID missing or invalid")
+		return nil, errorHandling.ErrInvalidTokenClaims
 	}
 	exp, ok := claims["exp"].(float64)
 	if !ok {
-		return nil, errors.New("invalid token: expiration time missing")
+		return nil, errorHandling.ErrInvalidExpiredToken
 	}
 
 	currentTime := time.Now().Unix()
 	if int64(exp) < currentTime {
-		return nil, errors.New("token has expired")
+		return nil, errorHandling.ErrInvalidExpiredToken
 	}
 
 	session, err := u.tokenRepo.GetSession(uint64(userID), sessionUUID)
 	if err != nil {
-		return nil, errors.New("session not found")
+		return nil, errorHandling.ErrInvalidExpiredToken
 	}
 	switch tokenType {
 	case enums.Access:
 		if session.AccessToken != tokenString {
-			return nil, errors.New("session acess token not equals to user acess token")
+			return nil, errorHandling.ErrInvalidTokenType
 		}
 	case enums.Refresh:
 		if session.RefreshToken != tokenString {
-			return nil, errors.New("session refresh token not equals to user refresh token")
+			return nil, errorHandling.ErrInvalidTokenType
 		}
 	default:
-		return nil, errors.New("invalid token type")
+		return nil, errorHandling.ErrInvalidTokenType
 	}
 
 	logrus.Infof("User ID from token: %v, Token session UUID: %v, Token type: %v",

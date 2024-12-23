@@ -1,19 +1,17 @@
 package di
 
 import (
-	"fmt"
+	"database/sql"
 	"marketplace/delivery/handlers"
 	"marketplace/delivery/middleware"
 	"marketplace/internal/data/repository"
 	categoryUsecase "marketplace/internal/domain/usecase/category_usecase"
 	productUsecase "marketplace/internal/domain/usecase/product_usecase"
 	storeUsecase "marketplace/internal/domain/usecase/store_usecase"
-	userUsecase "marketplace/internal/domain/usecase/user_ucecase"
+	userUsecase "marketplace/internal/domain/usecase/user_usecase"
 	"marketplace/pkg/database"
 	"marketplace/pkg/utils"
 	"os"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
@@ -167,7 +165,6 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	mainScope.POST("/users/login", userHandler.Login)
 	mainScope.POST("/users/refresh-session", userHandler.RefreshSession)
 	mainScope.POST("/users/logout", userHandler.Logout)
-
 
 	// Регистрация маршрутов для продуктов
 	authorizedScope.GET("/products/:id", productHandler.GetProductByID)

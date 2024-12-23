@@ -1,4 +1,4 @@
-package error_handling
+package errorHandling
 
 // ErrorResponse - структура для представления ошибок и отправки их в ответе.
 type ErrorResponse struct {

@@ -3,10 +3,9 @@ package middleware
 import (
 	"marketplace/config"
 	"marketplace/internal/domain/enums"
-	userUsecase "marketplace/internal/domain/usecase/user_ucecase"
+	userUsecase "marketplace/internal/domain/usecase/user_usecase"
 	"marketplace/pkg/error_handling"
 
-	"net/http"
 	"strings"
 
 	"github.com/golang-jwt/jwt"
@@ -20,12 +19,12 @@ func JWTMiddleware(userUseCase *userUsecase.UserUseCase) echo.MiddlewareFunc {
 			// Извлекаем токен из заголовков Authorization
 			authHeader := c.Request().Header.Get("Authorization")
 			if authHeader == "" {
-				return error_handling.ErrMissingToken
+				return errorHandling.ErrMissingToken
 			}
 			// Проверяем формат токена (Bearer)
 			tokenParts := strings.Split(authHeader, " ")
 			if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-				return error_handling.ErrInvalidTokenFormat
+				return errorHandling.ErrInvalidTokenFormat
 			}
 
 			// Получаем сам JWT токен
@@ -34,13 +33,13 @@ func JWTMiddleware(userUseCase *userUsecase.UserUseCase) echo.MiddlewareFunc {
 			// Проверяем валидность Access токена
 			token, err := userUseCase.ValidateToken(tokenString, config.GetConfig().JWTKey, enums.Access)
 			if err != nil {
-				return error_handling.ErrInvalidExpiredToken
+				return err
 			}
 
 			// Извлекаем информацию о пользователе из токена
 			claims, ok := token.Claims.(jwt.MapClaims)
 			if !ok || !token.Valid {
-				return error_handling.ErrInvalidTokenClaims
+				return errorHandling.ErrInvalidTokenClaims
 			}
 
 			// Устанавливаем user_id в контекст для последующего использования в контроллерах.

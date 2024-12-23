@@ -3,7 +3,7 @@ package productusecase
 import (
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
-	errorResponses "marketplace/pkg/error_handling"
+	"marketplace/pkg/error_handling"
 )
 
 // ProductUseCase реализует интерфейс ProductUseCase.
@@ -27,7 +27,7 @@ func NewProductUseCase(
 func (p *ProductUseCase) CreateProduct(product entities.Product) error {
 	categoryBelongs, err := p.storeRepo.IsCategoryAttached(product.StoreID, product.CategoryID)
 	if err != nil || !categoryBelongs {
-		return errorResponses.ErrCategoryNotAttached
+		return errorHandling.ErrCategoryNotAttached
 	}
 
 	err = p.productRepo.Save(product)
@@ -47,12 +47,12 @@ func (p *ProductUseCase) GetProductByID(id uint64) (entities.Product, error) {
 func (p *ProductUseCase) UpdateProduct(product entities.Product) error {
 	categoryBelongs, err := p.storeRepo.IsCategoryAttached(product.StoreID, product.CategoryID)
 	if err != nil || !categoryBelongs {
-		return errorResponses.ErrCategoryNotAttached
+		return errorHandling.ErrCategoryNotAttached
 	}
 
 	productBelongs, err := p.productRepo.IsProductBelongsToStore(product.ID, product.StoreID)
 	if err != nil || !productBelongs {
-		return errorResponses.ErrProductNotBelongsToStore
+		return errorHandling.ErrProductNotBelongsToStore
 	}
 
 	err = p.productRepo.Save(product)
@@ -67,12 +67,12 @@ func (p *ProductUseCase) UpdateProduct(product entities.Product) error {
 func (p *ProductUseCase) DeleteProduct(id uint64) error {
 	product, err := p.productRepo.FindByID(id)
 	if err != nil {
-		return errorResponses.ErrProductNotFound
+		return errorHandling.ErrProductNotFound
 	}
 
 	productBelongs, err := p.productRepo.IsProductBelongsToStore(product.ID, product.StoreID)
 	if err != nil || !productBelongs {
-		return errorResponses.ErrProductNotBelongsToStore
+		return errorHandling.ErrProductNotBelongsToStore
 	}
 
 	err = p.productRepo.Delete(id)
