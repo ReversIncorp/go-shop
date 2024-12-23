@@ -10,7 +10,7 @@ type ProductRepository interface {
 	Delete(id uint64) error
 
 	FindByID(id uint64) (entities.Product, error)
-	FindProductsByParams(params entities.ProductSearchParams) ([]entities.Product, error)
+	FindProductsByParams(params entities.ProductSearchParams) ([]entities.Product, *uint64, error)
 
 	IsProductBelongsToStore(productID, storeID uint64) (bool, error)
 }

@@ -10,17 +10,17 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// CategoryHandler обрабатывает HTTP-запросы для категорий
+// CategoryHandler обрабатывает HTTP-запросы для категорий.
 type CategoryHandler struct {
 	categoryUseCase *categoryUsecases.CategoryUseCase
 }
 
-// NewCategoryHandler создает новый экземпляр CategoryHandler
+// NewCategoryHandler создает новый экземпляр CategoryHandler.
 func NewCategoryHandler(categoryUseCase *categoryUsecases.CategoryUseCase) *CategoryHandler {
 	return &CategoryHandler{categoryUseCase: categoryUseCase}
 }
 
-// CreateCategory обрабатывает запрос на создание категории
+// CreateCategory обрабатывает запрос на создание категории.
 func (h *CategoryHandler) CreateCategory(c echo.Context) error {
 	var category entities.Category
 
@@ -38,10 +38,9 @@ func (h *CategoryHandler) CreateCategory(c echo.Context) error {
 		return err
 	}
 	return c.JSON(http.StatusCreated, category)
-
 }
 
-// DeleteCategory обрабатывает запрос на удаление категории
+// DeleteCategory обрабатывает запрос на удаление категории.
 func (h *CategoryHandler) DeleteCategory(c echo.Context) error {
 	id := c.Param("id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
@@ -61,7 +60,7 @@ func (h *CategoryHandler) DeleteCategory(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-// GetAllCategoriesByStore обрабатывает запрос на получение всех категорий
+// GetAllCategoriesByStore обрабатывает запрос на получение всех категорий.
 func (h *CategoryHandler) GetAllCategoriesByStore(c echo.Context) error {
 	id := c.Param("store_id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
@@ -77,7 +76,7 @@ func (h *CategoryHandler) GetAllCategoriesByStore(c echo.Context) error {
 	return c.JSON(http.StatusOK, categories)
 }
 
-// GetCategoryByID обрабатывает запрос на получение категории по айди
+// GetCategoryByID обрабатывает запрос на получение категории по айди.
 func (h *CategoryHandler) GetCategoryByID(c echo.Context) error {
 	id := c.Param("id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
@@ -93,7 +92,7 @@ func (h *CategoryHandler) GetCategoryByID(c echo.Context) error {
 	return c.JSON(http.StatusOK, category)
 }
 
-// GetAllCategories обрабатывает запрос на получение всех категорий
+// GetAllCategories обрабатывает запрос на получение всех категорий.
 func (h *CategoryHandler) GetAllCategories(c echo.Context) error {
 	category, err := h.categoryUseCase.GetAllCategories()
 	if err != nil {

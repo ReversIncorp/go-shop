@@ -7,17 +7,25 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 )
 
 // ProductHandler обрабатывает HTTP-запросы для продуктов.
 type ProductHandler struct {
 	productUseCase *productUsecas.ProductUseCase
+	validator      *validator.Validate
 }
 
 // NewProductHandler создает новый экземпляр ProductHandler.
-func NewProductHandler(productUseCase *productUsecas.ProductUseCase) *ProductHandler {
-	return &ProductHandler{productUseCase: productUseCase}
+func NewProductHandler(
+	productUseCase *productUsecas.ProductUseCase,
+	validator *validator.Validate,
+) *ProductHandler {
+	return &ProductHandler{
+		productUseCase: productUseCase,
+		validator:      validator,
+	}
 }
 
 // CreateProduct обрабатывает запрос на создание продукта.
@@ -106,11 +114,18 @@ func (h *ProductHandler) GetProductsByFilters(c echo.Context) error {
 	if err := c.Bind(&searchParams); err != nil {
 		return error_handling.ErrInvalidInput
 	}
+	if err := h.validator.Struct(searchParams); err != nil {
+		return error_handling.ErrInvalidInput
+	}
 
-	products, err := h.productUseCase.GetProductsByFilters(searchParams)
+	products, nextCursor, err := h.productUseCase.GetProductsByFilters(searchParams)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, products)
+	return c.JSON(http.StatusOK, echo.Map{
+		"data":       products,
+		"limit":      searchParams.Limit,
+		"nextCursor": nextCursor,
+	})
 }

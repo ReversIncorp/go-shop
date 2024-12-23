@@ -131,22 +131,42 @@ func (r *productRepositoryImpl) Delete(id uint64) error {
 	return nil
 }
 
-func (r *productRepositoryImpl) FindProductsByParams(params entities.ProductSearchParams) ([]entities.Product, error) {
+func (r *productRepositoryImpl) FindProductsByParams(
+	params entities.ProductSearchParams,
+) ([]entities.Product, *uint64, error) {
+	query, args := r.buildProductQuery(params)
+	rows, err := r.executeQuery(query, args)
+	if err != nil {
+		return nil, nil, tracerr.Wrap(err)
+	}
+	defer rows.Close()
+
+	products, lastCursor, err := r.processProductRows(rows, params.Limit)
+	if err != nil {
+		return nil, nil, tracerr.Wrap(err)
+	}
+
+	return products, lastCursor, nil
+}
+
+// Генерирует SQL-запрос и параметры.
+func (r *productRepositoryImpl) buildProductQuery(params entities.ProductSearchParams) (string, []interface{}) {
 	query := `SELECT 
-    id, 
-    name,
-    description,
-    price, 
-    quantity, 
-    category_id,
-    store_id,
-    created_at, 
-    updated_at 
+		id, 
+		name, 
+		description, 
+		price, 
+		quantity, 
+		category_id, 
+		store_id, 
+		created_at, 
+		updated_at 
 	FROM products`
 
 	var conditions []string
 	var args []interface{}
 
+	// Фильтры по параметрам
 	if params.StoreID != nil {
 		conditions = append(conditions, fmt.Sprintf("store_id = $%d", len(args)+1))
 		args = append(args, *params.StoreID)
@@ -172,18 +192,44 @@ func (r *productRepositoryImpl) FindProductsByParams(params entities.ProductSear
 		args = append(args, "%"+*params.Name+"%")
 	}
 
-	// Добавляем условия, если они есть
+	// Курсор для пагинации
+	if params.Cursor != nil {
+		conditions = append(conditions, fmt.Sprintf("id > $%d", len(args)+1))
+		args = append(args, *params.Cursor)
+	}
+
+	// Добавляем условия в запрос
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
+	// Сортировка по ID
+	query += " ORDER BY id ASC"
+
+	// Лимит
+	if params.Limit != nil {
+		query += fmt.Sprintf(" LIMIT $%d", len(args)+1)
+		args = append(args, *params.Limit)
+	}
+
+	return query, args
+}
+
+// Выполняет SQL-запрос.
+func (r *productRepositoryImpl) executeQuery(query string, args []interface{}) (*sql.Rows, error) {
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
-		return nil, tracerr.Wrap(fmt.Errorf("error executing query: %w", err))
+		return nil, tracerr.Wrap(err)
 	}
-	defer rows.Close()
+	return rows, nil
+}
 
+// Обрабатывает результаты запроса.
+func (r *productRepositoryImpl) processProductRows(rows *sql.Rows, limit *uint64) ([]entities.Product, *uint64, error) {
 	var products []entities.Product
+	var lastCursor uint64
+
+	// Читаем строки
 	for rows.Next() {
 		var product entities.Product
 		if err := rows.Scan(
@@ -196,16 +242,23 @@ func (r *productRepositoryImpl) FindProductsByParams(params entities.ProductSear
 			&product.StoreID,
 			&product.CreatedAt,
 			&product.UpdatedAt); err != nil {
-			return nil, tracerr.Wrap(fmt.Errorf("error scanning row: %w", err))
+			return nil, nil, tracerr.Wrap(err)
 		}
 		products = append(products, product)
+		lastCursor = product.ID
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, tracerr.Wrap(fmt.Errorf("error during rows iteration: %w", err))
+	// Проверяем ошибки чтения строк
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
 	}
 
-	return products, nil
+	// Если данных меньше лимита, следующего курсора нет
+	if limit != nil && uint64(len(products)) < *limit {
+		return products, nil, nil
+	}
+
+	return products, &lastCursor, nil
 }
 
 func (r *productRepositoryImpl) IsProductBelongsToStore(productID, storeID uint64) (bool, error) {
@@ -218,7 +271,7 @@ func (r *productRepositoryImpl) IsProductBelongsToStore(productID, storeID uint6
 
 	err := r.db.QueryRow(query, productID, storeID).Scan(&exists)
 	if err != nil {
-		return false, tracerr.Wrap(fmt.Errorf("failed to check product ownership: %w", err))
+		return false, tracerr.Wrap(err)
 	}
 
 	return exists, nil

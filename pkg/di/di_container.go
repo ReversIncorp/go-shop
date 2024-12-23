@@ -1,7 +1,7 @@
 package di
 
 import (
-	"database/sql"
+	"fmt"
 	"marketplace/delivery/handlers"
 	"marketplace/delivery/middleware"
 	"marketplace/internal/data/repository"
@@ -13,13 +13,15 @@ import (
 	"marketplace/pkg/utils"
 	"os"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"github.com/ztrue/tracerr"
 	"go.uber.org/dig"
 )
 
-var container = dig.New() //nolint:gochecknoglobals
+var container = dig.New()
 
 func Container() *dig.Container {
 	return container
@@ -128,6 +130,7 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	var storeHandler *handlers.StoreHandler
 	var categoryHandler *handlers.CategoryHandler
 	var storeUseCase *storeUsecase.StoreUseCase
+	var userUseCase *userUsecase.UserUseCase
 
 	// Получаем хэндлеры и use case через контейнер
 	if err := container.Invoke(func(
@@ -135,12 +138,14 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 		ph *handlers.ProductHandler,
 		sh *handlers.StoreHandler,
 		ch *handlers.CategoryHandler,
-		su *storeUsecase.StoreUseCase) {
+		su *storeUsecase.StoreUseCase,
+		uu *userUsecase.UserUseCase) {
 		userHandler = uh
 		productHandler = ph
 		storeHandler = sh
 		categoryHandler = ch
 		storeUseCase = su
+		userUseCase = uu
 	}); err != nil {
 		return tracerr.Errorf("Failed to invoke handlers or use case: %v\n", err)
 	}
@@ -151,7 +156,7 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 
 	// Основной скоуп для авторизованных юзеров
 	authorizedScope := mainScope.Group("")
-	authorizedScope.Use(middleware.JWTMiddleware)
+	authorizedScope.Use(middleware.JWTMiddleware(userUseCase))
 
 	// Скоуп для админов сторов
 	storeAdminScope := authorizedScope.Group("/stores/:store_id")
@@ -160,10 +165,14 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	// Регистрация маршрутов для пользователей
 	mainScope.POST("/users", userHandler.Register)
 	mainScope.POST("/users/login", userHandler.Login)
+	mainScope.POST("/users/refresh-session", userHandler.RefreshSession)
+	mainScope.POST("/users/logout", userHandler.Logout)
+
 
 	// Регистрация маршрутов для продуктов
 	authorizedScope.GET("/products/:id", productHandler.GetProductByID)
 	authorizedScope.GET("/products", productHandler.GetProductsByFilters)
+	// Добавление продуктов для админов сторов
 	storeAdminScope.POST("/products", productHandler.CreateProduct)
 	storeAdminScope.PUT("/products/:id", productHandler.UpdateProduct)
 	storeAdminScope.DELETE("/products/:id", productHandler.DeleteProduct)
@@ -171,8 +180,9 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	// Регистрация маршрутов для магазинов
 	authorizedScope.POST("/stores", storeHandler.CreateStore)
 	authorizedScope.GET("/stores/:store_id", storeHandler.GetStoreByID)
-	authorizedScope.GET("/stores", storeHandler.GetAllStores)
+	authorizedScope.GET("/stores", storeHandler.GetStoresByFilters)
 	authorizedScope.GET("/stores/:store_id/categories", categoryHandler.GetAllCategoriesByStore)
+	// Для админов сторов
 	storeAdminScope.PUT("", storeHandler.UpdateStore)
 	storeAdminScope.DELETE("", storeHandler.DeleteStore)
 	storeAdminScope.POST("/categories", storeHandler.AttachCategoryToStore)

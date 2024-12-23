@@ -1,4 +1,4 @@
-package categoryUsecase
+package categoryusecase
 
 import (
 	"marketplace/internal/domain/entities"

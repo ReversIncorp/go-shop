@@ -25,15 +25,15 @@ func validatePassword(fl validator.FieldLevel) bool {
 		return false
 	}
 
-	// Проверяем наличие хотя бы одной заглавной буквы
-	hasUppercase, hasLowercase, hasDigit, hasSpecialChar := regexp.MustCompile(`[A-Z]`).MatchString(password),
-		regexp.MustCompile(`[a-z]`).MatchString(password),
-		regexp.MustCompile(`[0-9]`).MatchString(password),
-		///TODO: переделать тут валидацию
-		regexp.MustCompile(`[!@#$%^&*begin:math:text$_\+\-=$end:math:text$_\+\-=$begin:math:display$$end:math:display$\{\};:'"\|\\,.<>/?]+`).MatchString(password) // Проверяем наличие хотя бы одной строчной буквы
-	// Проверяем наличие хотя бы одной цифры.
-	// Проверяем наличие хотя бы одного специального символа
+	hasLower := regexp.MustCompile("[a-z]").MatchString(password)
+	hasUpper := regexp.MustCompile("[A-Z]").MatchString(password)
+	hasDigit := regexp.MustCompile(`\\d`).MatchString(password)
+	hasSpecial := regexp.MustCompile(`[!@#$%^&*()_+\-=$begin:math:display$$end:math:display${};':"\\|,.<>\/?]+`).
+		MatchString(password)
 
+	// Проверяем наличие хотя бы одной строчной буквы.
+	// Проверяем наличие хотя бы одной цифры.
+	// Проверяем наличие хотя бы одного специального символа.
 	// Пароль должен содержать заглавную, строчную букву, цифру и спец символ.
-	return hasUppercase && hasLowercase && hasDigit && hasSpecialChar
+	return hasUpper && hasLower && hasDigit && hasSpecial
 }

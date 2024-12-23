@@ -336,6 +336,26 @@ issues:
   max-same-issues: 50
 
   exclude-rules:
+    - linters:
+        - govet
+      path: ".*"
+      text: "declaration of \"err\" shadows declaration"
+    - linters:
+        - govet
+      path: ".*"
+      text: "declaration of \"ok\" shadows declaration"
+    - path: ^delivery/middleware/logger\.go$
+      linters:
+        - gochecknoglobals
+      text: appLoggers
+    - path: ^delivery/middleware/logger\.go$
+      linters:
+        - gochecknoglobals
+      text: once
+    - path: ^pkg/di/di_container\.go$
+      linters:
+        - gochecknoglobals
+      text: container
     - source: "(noinspection|TODO)"
       linters: [ godot ]
     - source: "//noinspection"

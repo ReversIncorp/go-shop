@@ -12,6 +12,7 @@ type StoreRepository interface {
 
 	FindByID(id uint64) (entities.Store, error)
 	FindAll() ([]entities.Store, error)
+	FindStoresByParams(params entities.StoreSearchParams) ([]entities.Store, *uint64, error)
 
 	AttachCategory(storeID, categoryID uint64) error
 	IsCategoryAttached(storeID, categoryID uint64) (bool, error)
