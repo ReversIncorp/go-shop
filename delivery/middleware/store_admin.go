@@ -2,7 +2,7 @@ package middleware
 
 import (
 	usecase "marketplace/internal/domain/usecase/store_usecase"
-	"marketplace/pkg/error_handling"
+	errorHandling "marketplace/pkg/error_handling"
 	"strconv"
 
 	"github.com/labstack/echo/v4"

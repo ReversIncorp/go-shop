@@ -32,7 +32,7 @@ func (r *redisJWTRepository) SaveSession(userID uint64, sessionID string, sessio
 
 	jsonSession, err := json.Marshal(session)
 	if err != nil {
-		return tracerr.Wrap(fmt.Errorf("failed to marshal token: %v", err))
+		return tracerr.Wrap(fmt.Errorf("failed to marshal token: %w", err))
 	}
 
 	ttl := time.Until(time.Unix(session.ExpiresAt, 0))

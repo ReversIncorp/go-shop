@@ -5,7 +5,7 @@ import (
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/enums"
 	"marketplace/internal/domain/repository"
-	"marketplace/pkg/error_handling"
+	errorHandling "marketplace/pkg/error_handling"
 	"time"
 
 	"github.com/golang-jwt/jwt"

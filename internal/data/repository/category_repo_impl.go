@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
-	"marketplace/pkg/error_handling"
+	errorHandling "marketplace/pkg/error_handling"
 	"time"
 
 	"github.com/ztrue/tracerr"

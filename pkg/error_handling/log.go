@@ -1,7 +1,6 @@
-package errorHandling
+package errorhandling
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -45,6 +44,6 @@ func printFilteredSourceColor(err error, module string) {
 	}
 
 	for _, frame := range filteredStack {
-		fmt.Println(frame)
+		logrus.Println(frame)
 	}
 }

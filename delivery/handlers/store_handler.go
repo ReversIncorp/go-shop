@@ -3,7 +3,7 @@ package handlers
 import (
 	"marketplace/internal/domain/entities"
 	storeUsecases "marketplace/internal/domain/usecase/store_usecase"
-	"marketplace/pkg/error_handling"
+	errorHandling "marketplace/pkg/error_handling"
 	"net/http"
 	"strconv"
 

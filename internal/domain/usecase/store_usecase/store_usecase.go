@@ -4,7 +4,7 @@ import (
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
 
-	"marketplace/pkg/error_handling"
+	errorHandling "marketplace/pkg/error_handling"
 )
 
 // StoreUseCase реализует интерфейс StoreUseCase.

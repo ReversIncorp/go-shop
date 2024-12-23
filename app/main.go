@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"marketplace/pkg/di"
-	"marketplace/pkg/error_handling"
+	errorHandling "marketplace/pkg/error_handling"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"

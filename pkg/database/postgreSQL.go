@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	_ "github.com/lib/pq"
+	_ "github.com/lib/pq" // Драйвер для постгреса.
 	"github.com/ztrue/tracerr"
 )
 
