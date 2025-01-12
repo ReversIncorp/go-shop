@@ -2,7 +2,7 @@ package middleware
 
 import (
 	usecase "marketplace/internal/domain/usecase/store_usecase"
-	"net/http"
+	errorHandling "marketplace/pkg/error_handling"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -14,22 +14,22 @@ func StoreAdminMiddleware(storeUsecase *usecase.StoreUseCase) echo.MiddlewareFun
 		return func(c echo.Context) error {
 			userID, ok := c.Get("user_id").(float64)
 			if !ok {
-				return c.JSON(http.StatusUnauthorized, echo.Map{"error": "Unauthorized access: invalid user"})
+				return errorHandling.ErrUnauthorizedAccess
 			}
 			uid := uint64(userID)
 
 			storeIDParam := c.Param("store_id")
 			storeID, err := strconv.ParseUint(storeIDParam, 10, 64)
 			if err != nil {
-				return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
+				return errorHandling.ErrInvalidInput
 			}
 
 			isAdmin, err := storeUsecase.IsUserStoreAdmin(storeID, uid)
 			if err != nil {
-				return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to check store admin status"})
+				return err
 			}
 			if !isAdmin {
-				return c.JSON(http.StatusForbidden, echo.Map{"error": "Forbidden: user is not an admin of this store"})
+				return errorHandling.ErrUserNotAdminStore
 			}
 
 			return next(c)

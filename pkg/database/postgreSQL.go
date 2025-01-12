@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+
+	_ "github.com/lib/pq" // Драйвер для постгреса.
+	"github.com/ztrue/tracerr"
 )
 
 func OpenPostgreSQL() (*sql.DB, error) {
@@ -22,12 +25,12 @@ func OpenPostgreSQL() (*sql.DB, error) {
 	)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+		return nil, tracerr.Errorf("failed to connect to database: %w", err)
 	}
 
 	err = db.Ping()
 	if err != nil {
-		return nil, fmt.Errorf("ping to database failed: %w", err)
+		return nil, tracerr.Errorf("ping to database failed: %w", err)
 	}
 
 	return db, nil

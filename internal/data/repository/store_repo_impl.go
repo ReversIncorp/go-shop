@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
+	errorHandling "marketplace/pkg/error_handling"
 	"strings"
 	"time"
+
+	"github.com/ztrue/tracerr"
 )
 
 type storeRepositoryImpl struct {
@@ -28,10 +31,10 @@ func (r *storeRepositoryImpl) IsExist(id uint64) (bool, error) {
 	).Scan(&existingStoreID)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return false, errors.New("store not found")
+		return false, tracerr.Wrap(errors.New("store not found"))
 	}
 	if err != nil {
-		return false, err
+		return false, tracerr.Wrap(err)
 	}
 
 	return true, nil
@@ -40,7 +43,7 @@ func (r *storeRepositoryImpl) IsExist(id uint64) (bool, error) {
 func (r *storeRepositoryImpl) Save(store entities.Store, uid uint64) error {
 	tx, err := r.db.Begin()
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return tracerr.Wrap(fmt.Errorf("failed to begin transaction: %w", err))
 	}
 
 	store.UpdatedAt = time.Now()
@@ -58,9 +61,9 @@ func (r *storeRepositoryImpl) Save(store entities.Store, uid uint64) error {
 	if err != nil {
 		err = tx.Rollback()
 		if err != nil {
-			return err
+			return tracerr.Wrap(err)
 		}
-		return fmt.Errorf("failed to save store: %w", err)
+		return tracerr.Wrap(fmt.Errorf("failed to save store: %w", err))
 	}
 
 	_, err = tx.Exec(`INSERT INTO store_roles (store_id, user_id, is_owner) VALUES ($1, $2, $3)`,
@@ -70,11 +73,11 @@ func (r *storeRepositoryImpl) Save(store entities.Store, uid uint64) error {
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("failed to add user as store admin: %w", err)
+		return tracerr.Wrap(fmt.Errorf("failed to add user as store admin: %w", err))
 	}
 
 	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return tracerr.Wrap(fmt.Errorf("failed to commit transaction: %w", err))
 	}
 
 	return nil
@@ -96,10 +99,10 @@ func (r *storeRepositoryImpl) FindByID(id uint64) (entities.Store, error) {
 			&store.UpdatedAt)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return entities.Store{}, errors.New("store not found")
+		return entities.Store{}, errorHandling.ErrStoreNotFound
 	}
 	if err != nil {
-		return entities.Store{}, err
+		return entities.Store{}, tracerr.Wrap(err)
 	}
 
 	return store, nil
@@ -118,7 +121,7 @@ func (r *storeRepositoryImpl) Update(store entities.Store) error {
 		store.ID)
 
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return nil
@@ -127,7 +130,7 @@ func (r *storeRepositoryImpl) Update(store entities.Store) error {
 func (r *storeRepositoryImpl) Delete(id uint64) error {
 	_, err := r.db.Exec("DELETE FROM stores WHERE id = $1", id)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	return nil
 }
@@ -142,25 +145,25 @@ func (r *storeRepositoryImpl) FindAll() ([]entities.Store, error) {
 	FROM stores`)
 
 	if err != nil {
-		return nil, err
+		return nil, tracerr.Wrap(err)
 	}
 	defer rows.Close()
 
 	var stores []entities.Store
 	for rows.Next() {
 		var store entities.Store
-		if err = rows.Scan(&store.ID,
+		if err := rows.Scan(&store.ID,
 			&store.Name,
 			&store.Description,
 			&store.CreatedAt,
 			&store.UpdatedAt); err != nil {
-			return nil, err
+			return nil, tracerr.Wrap(err)
 		}
 		stores = append(stores, store)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, tracerr.Wrap(err)
 	}
 
 	return stores, nil
@@ -170,7 +173,7 @@ func (r *storeRepositoryImpl) FindStoresByParams(params entities.StoreSearchPara
 	query, args := r.buildQuery(params)
 	stores, lastCursor, err := r.executeAndProcessQuery(query, args)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error executing or processing query: %w", err)
+		return nil, nil, tracerr.Wrap(fmt.Errorf("error executing or processing query: %w", err))
 	}
 
 	return stores, lastCursor, nil
@@ -224,7 +227,7 @@ func (r *storeRepositoryImpl) executeAndProcessQuery(
 ) ([]entities.Store, *uint64, error) {
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error executing query: %w", err)
+		return nil, nil, tracerr.Wrap(fmt.Errorf("error executing query: %w", err))
 	}
 	defer rows.Close()
 
@@ -240,14 +243,14 @@ func (r *storeRepositoryImpl) executeAndProcessQuery(
 			&store.CreatedAt,
 			&store.UpdatedAt,
 		); err != nil {
-			return nil, nil, fmt.Errorf("error scanning row: %w", err)
+			return nil, nil, tracerr.Wrap(fmt.Errorf("error scanning row: %w", err))
 		}
 		stores = append(stores, store)
 		lastCursor = &store.ID
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, nil, fmt.Errorf("error during rows iteration: %w", err)
+		return nil, nil, tracerr.Wrap(fmt.Errorf("error during rows iteration: %w", err))
 	}
 
 	return stores, lastCursor, nil
@@ -256,7 +259,7 @@ func (r *storeRepositoryImpl) executeAndProcessQuery(
 func (r *storeRepositoryImpl) AttachCategory(storeID, categoryID uint64) error {
 	_, err := r.db.Exec(`INSERT INTO store_categories (store_id, category_id) VALUES ($1, $2)`, storeID, categoryID)
 	if err != nil {
-		return fmt.Errorf("failed to add category to store: %w", err)
+		return tracerr.Wrap(fmt.Errorf("failed to add category to store: %w", err))
 	}
 	return nil
 }
@@ -267,7 +270,7 @@ func (r *storeRepositoryImpl) IsCategoryAttached(storeID, categoryID uint64) (bo
 
 	err := r.db.QueryRow(query, storeID, categoryID).Scan(&exists)
 	if err != nil {
-		return false, err
+		return false, tracerr.Wrap(err)
 	}
 
 	return exists, nil
@@ -276,7 +279,7 @@ func (r *storeRepositoryImpl) IsCategoryAttached(storeID, categoryID uint64) (bo
 func (r *storeRepositoryImpl) DetachCategory(storeID, categoryID uint64) error {
 	_, err := r.db.Exec(`DELETE FROM store_categories WHERE store_id = $1 AND category_id = $2`, storeID, categoryID)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	return nil
 }
@@ -287,7 +290,7 @@ func (r *storeRepositoryImpl) IsUserStoreAdmin(storeID, uid uint64) (bool, error
 
 	err := r.db.QueryRow(query, storeID, uid).Scan(&isAdmin)
 	if err != nil {
-		return false, fmt.Errorf("failed to check if user is admin: %w", err)
+		return false, tracerr.Wrap(fmt.Errorf("failed to check if user is admin: %w", err))
 	}
 
 	return isAdmin, nil
@@ -301,7 +304,7 @@ func (r *storeRepositoryImpl) AddUserStoreAdmin(storeID, uid uint64, owner bool)
 
 	_, err := r.db.Exec(query, storeID, uid, owner)
 	if err != nil {
-		return fmt.Errorf("failed to add user as admin to store: %w", err)
+		return tracerr.Wrap(fmt.Errorf("failed to add user as admin to store: %w", err))
 	}
 
 	return nil

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/ztrue/tracerr"
 )
 
 // redisJWTRepository - реализация JWTRepository для Redis.
@@ -31,16 +32,16 @@ func (r *redisJWTRepository) SaveSession(userID uint64, sessionID string, sessio
 
 	jsonSession, err := json.Marshal(session)
 	if err != nil {
-		return fmt.Errorf("failed to marshal session: %w", err)
+		return tracerr.Wrap(fmt.Errorf("failed to marshal token: %w", err))
 	}
 
 	ttl := time.Until(time.Unix(session.ExpiresAt, 0))
 	if ttl <= 0 {
-		return errors.New("session expiration time is invalid or already expired")
+		return tracerr.Wrap(errors.New("session expiration time is invalid or already expired"))
 	}
 
 	if err = r.redisClient.SetEX(r.context, sessionKey, jsonSession, ttl).Err(); err != nil {
-		return fmt.Errorf("failed to save session with expiration: %w", err)
+		return tracerr.Wrap(fmt.Errorf("failed to save session with expiration: %w", err))
 	}
 
 	return nil
@@ -51,14 +52,14 @@ func (r *redisJWTRepository) GetSession(userID uint64, sessionID string) (*entit
 
 	sessionJSON, err := r.redisClient.Get(r.context, sessionKey).Result()
 	if errors.Is(err, redis.Nil) {
-		return nil, errors.New("session not found")
+		return nil, tracerr.Wrap(errors.New("session not found"))
 	} else if err != nil {
-		return nil, fmt.Errorf("failed to get session: %w", err)
+		return nil, tracerr.Wrap(fmt.Errorf("failed to get session: %w", err))
 	}
 
 	var session entities.SessionDetails
 	if err = json.Unmarshal([]byte(sessionJSON), &session); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal session: %w", err)
+		return nil, tracerr.Wrap(fmt.Errorf("failed to unmarshal session: %w", err))
 	}
 
 	return &session, nil
@@ -74,12 +75,12 @@ func (r *redisJWTRepository) GetAllSessions(userID uint64) (map[string]*entities
 		sessionKey := iter.Val()
 		sessionJSON, err := r.redisClient.Get(r.context, sessionKey).Result()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get session: %w", err)
+			return nil, tracerr.Wrap(fmt.Errorf("failed to get session: %w", err))
 		}
 
 		var session entities.SessionDetails
 		if err = json.Unmarshal([]byte(sessionJSON), &session); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal session: %w", err)
+			return nil, tracerr.Wrap(fmt.Errorf("failed to unmarshal session: %w", err))
 		}
 
 		sessionID := sessionKey[len(fmt.Sprintf("user:%d:session:", userID)):]
@@ -87,7 +88,7 @@ func (r *redisJWTRepository) GetAllSessions(userID uint64) (map[string]*entities
 	}
 
 	if err := iter.Err(); err != nil {
-		return nil, fmt.Errorf("failed to iterate sessions: %w", err)
+		return nil, tracerr.Wrap(fmt.Errorf("failed to iterate sessions: %w", err))
 	}
 
 	return result, nil
@@ -97,7 +98,7 @@ func (r *redisJWTRepository) DeleteSession(userID uint64, sessionID string) erro
 	sessionKey := fmt.Sprintf("user:%d:session:%s", userID, sessionID)
 
 	if err := r.redisClient.Del(r.context, sessionKey).Err(); err != nil {
-		return fmt.Errorf("failed to delete session: %w", err)
+		return tracerr.Wrap(fmt.Errorf("failed to delete session: %w", err))
 	}
 
 	return nil

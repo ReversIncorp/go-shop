@@ -3,6 +3,7 @@ package handlers
 import (
 	"marketplace/internal/domain/entities"
 	categoryUsecases "marketplace/internal/domain/usecase/category_usecase"
+	errorHandling "marketplace/pkg/error_handling"
 	"net/http"
 	"strconv"
 
@@ -24,17 +25,17 @@ func (h *CategoryHandler) CreateCategory(c echo.Context) error {
 	var category entities.Category
 
 	if err := c.Bind(&category); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
+		return errorHandling.ErrInvalidInput
 	}
 
 	userID := c.Get("user_id")
 	uid, ok := userID.(float64)
 	if !ok || userID == nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid or missing user_id from token"})
+		return errorHandling.ErrMissingUserFromToken
 	}
 
 	if err := h.categoryUseCase.CreateCategory(category, uint64(uid)); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
+		return err
 	}
 	return c.JSON(http.StatusCreated, category)
 }
@@ -44,17 +45,17 @@ func (h *CategoryHandler) DeleteCategory(c echo.Context) error {
 	id := c.Param("id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
+		return errorHandling.ErrInvalidInput
 	}
 
 	userID := c.Get("user_id")
 	uid, ok := userID.(float64)
 	if !ok || userID == nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid or missing user_id from token"})
+		return errorHandling.ErrMissingUserFromToken
 	}
 
 	if err = h.categoryUseCase.DeleteCategory(uint64ID, uint64(uid)); err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
+		return err
 	}
 	return c.NoContent(http.StatusNoContent)
 }
@@ -64,12 +65,12 @@ func (h *CategoryHandler) GetAllCategoriesByStore(c echo.Context) error {
 	id := c.Param("store_id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid store ID"})
+		return errorHandling.ErrInvalidInput
 	}
 
 	categories, err := h.categoryUseCase.GetAllCategoriesByStore(uint64ID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+		return errorHandling.ErrInternalServerError
 	}
 
 	return c.JSON(http.StatusOK, categories)
@@ -80,12 +81,12 @@ func (h *CategoryHandler) GetCategoryByID(c echo.Context) error {
 	id := c.Param("id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid category ID"})
+		return errorHandling.ErrInvalidInput
 	}
 
 	category, err := h.categoryUseCase.GetCategoryByID(uint64ID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+		return err
 	}
 
 	return c.JSON(http.StatusOK, category)
@@ -95,7 +96,7 @@ func (h *CategoryHandler) GetCategoryByID(c echo.Context) error {
 func (h *CategoryHandler) GetAllCategories(c echo.Context) error {
 	category, err := h.categoryUseCase.GetAllCategories()
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+		return errorHandling.ErrInternalServerError
 	}
 
 	return c.JSON(http.StatusOK, category)

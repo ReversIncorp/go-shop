@@ -1,9 +1,9 @@
 package categoryusecase
 
 import (
-	"errors"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
+	errorHandling "marketplace/pkg/error_handling"
 )
 
 type CategoryUseCase struct {
@@ -24,10 +24,15 @@ func NewCategoryUseCase(
 func (c *CategoryUseCase) CreateCategory(category entities.Category, uid uint64) error {
 	userData, err := c.userRepo.FindByID(uid)
 	if err != nil || !userData.IsSeller {
-		return errors.New("user is not seller")
+		return errorHandling.ErrUserNotSeller
 	}
 
-	return c.categoryRepo.Save(category)
+	err = c.categoryRepo.Save(category)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *CategoryUseCase) GetCategoryByID(id uint64) (entities.Category, error) {
@@ -37,10 +42,20 @@ func (c *CategoryUseCase) GetCategoryByID(id uint64) (entities.Category, error) 
 func (c *CategoryUseCase) DeleteCategory(id, uid uint64) error {
 	userData, err := c.userRepo.FindByID(uid)
 	if err != nil || !userData.IsSeller {
-		return errors.New("user is not seller")
+		return errorHandling.ErrUserNotSeller
 	}
 
-	return c.categoryRepo.Delete(id)
+	exists, err := c.categoryRepo.IsExist(id)
+	if err != nil || !exists {
+		return errorHandling.ErrCategoryNotFound
+	}
+
+	err = c.categoryRepo.Delete(id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *CategoryUseCase) GetAllCategoriesByStore(id uint64) ([]entities.Category, error) {

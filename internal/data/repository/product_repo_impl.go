@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
+	errorHandling "marketplace/pkg/error_handling"
 	"strings"
 	"time"
+
+	"github.com/ztrue/tracerr"
 )
 
 type productRepositoryImpl struct {
@@ -44,7 +47,7 @@ func (r *productRepositoryImpl) Save(product entities.Product) error {
 		product.UpdatedAt)
 
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return nil
@@ -74,10 +77,10 @@ func (r *productRepositoryImpl) FindByID(id uint64) (entities.Product, error) {
 			&product.UpdatedAt)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return entities.Product{}, errors.New("product not found")
+		return entities.Product{}, errorHandling.ErrProductNotFound
 	}
 	if err != nil {
-		return entities.Product{}, err
+		return entities.Product{}, tracerr.Wrap(err)
 	}
 
 	return product, nil
@@ -87,10 +90,10 @@ func (r *productRepositoryImpl) Update(product entities.Product) error {
 	var existingProductID int64
 	err := r.db.QueryRow("SELECT id FROM products WHERE id = $1", product.ID).Scan(&existingProductID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return errors.New("product not found")
+		return errorHandling.ErrProductNotFound
 	}
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	product.UpdatedAt = time.Now()
@@ -113,7 +116,7 @@ func (r *productRepositoryImpl) Update(product entities.Product) error {
 		product.UpdatedAt,
 		product.ID)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return nil
@@ -122,7 +125,7 @@ func (r *productRepositoryImpl) Update(product entities.Product) error {
 func (r *productRepositoryImpl) Delete(id uint64) error {
 	_, err := r.db.Exec("DELETE FROM products WHERE id = $1", id)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return nil
@@ -134,13 +137,13 @@ func (r *productRepositoryImpl) FindProductsByParams(
 	query, args := r.buildProductQuery(params)
 	rows, err := r.executeQuery(query, args)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error executing query: %w", err)
+		return nil, nil, tracerr.Wrap(err)
 	}
 	defer rows.Close()
 
 	products, lastCursor, err := r.processProductRows(rows, params.Limit)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error processing rows: %w", err)
+		return nil, nil, tracerr.Wrap(err)
 	}
 
 	return products, lastCursor, nil
@@ -216,7 +219,7 @@ func (r *productRepositoryImpl) buildProductQuery(params entities.ProductSearchP
 func (r *productRepositoryImpl) executeQuery(query string, args []interface{}) (*sql.Rows, error) {
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
-		return nil, err
+		return nil, tracerr.Wrap(err)
 	}
 	return rows, nil
 }
@@ -239,7 +242,7 @@ func (r *productRepositoryImpl) processProductRows(rows *sql.Rows, limit *uint64
 			&product.StoreID,
 			&product.CreatedAt,
 			&product.UpdatedAt); err != nil {
-			return nil, nil, fmt.Errorf("error scanning row: %w", err)
+			return nil, nil, tracerr.Wrap(err)
 		}
 		products = append(products, product)
 		lastCursor = product.ID
@@ -268,7 +271,7 @@ func (r *productRepositoryImpl) IsProductBelongsToStore(productID, storeID uint6
 
 	err := r.db.QueryRow(query, productID, storeID).Scan(&exists)
 	if err != nil {
-		return false, fmt.Errorf("failed to check product ownership: %w", err)
+		return false, tracerr.Wrap(err)
 	}
 
 	return exists, nil

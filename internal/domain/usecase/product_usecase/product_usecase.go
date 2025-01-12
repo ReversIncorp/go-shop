@@ -1,9 +1,9 @@
 package productusecase
 
 import (
-	"errors"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
+	errorHandling "marketplace/pkg/error_handling"
 )
 
 // ProductUseCase реализует интерфейс ProductUseCase.
@@ -27,10 +27,15 @@ func NewProductUseCase(
 func (p *ProductUseCase) CreateProduct(product entities.Product) error {
 	categoryBelongs, err := p.storeRepo.IsCategoryAttached(product.StoreID, product.CategoryID)
 	if err != nil || !categoryBelongs {
-		return errors.New("category not found or not belongs this store")
+		return errorHandling.ErrCategoryNotAttached
 	}
 
-	return p.productRepo.Save(product)
+	err = p.productRepo.Save(product)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetProductByID получает продукт по ID.
@@ -42,30 +47,40 @@ func (p *ProductUseCase) GetProductByID(id uint64) (entities.Product, error) {
 func (p *ProductUseCase) UpdateProduct(product entities.Product) error {
 	categoryBelongs, err := p.storeRepo.IsCategoryAttached(product.StoreID, product.CategoryID)
 	if err != nil || !categoryBelongs {
-		return errors.New("category not found or not belongs this store")
+		return errorHandling.ErrCategoryNotAttached
 	}
 
 	productBelongs, err := p.productRepo.IsProductBelongsToStore(product.ID, product.StoreID)
 	if err != nil || !productBelongs {
-		return errors.New("product not found or not belongs this store")
+		return errorHandling.ErrProductNotBelongsToStore
 	}
 
-	return p.productRepo.Update(product)
+	err = p.productRepo.Save(product)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // DeleteProduct удаляет продукт по ID.
 func (p *ProductUseCase) DeleteProduct(id uint64) error {
 	product, err := p.productRepo.FindByID(id)
 	if err != nil {
-		return errors.New("product not found")
+		return errorHandling.ErrProductNotFound
 	}
 
 	productBelongs, err := p.productRepo.IsProductBelongsToStore(product.ID, product.StoreID)
 	if err != nil || !productBelongs {
-		return errors.New("product not belongs this store")
+		return errorHandling.ErrProductNotBelongsToStore
 	}
 
-	return p.productRepo.Delete(id)
+	err = p.productRepo.Delete(id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetProductsByFilters получает все продукты по фильтрам.
