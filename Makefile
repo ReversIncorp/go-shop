@@ -45,7 +45,7 @@ gqlgen:
 
 
 setup-githooks:
-	touch .githooks/pre-commit
-	chmod +x .githooks/pre-commit  # Make it executable
+	touch .githooks/pre-push
+	chmod +x .githooks/pre-push  # Make it executable
 	git config core.hooksPath .githooks
 	echo "Git hooks directory set to .githooks"
