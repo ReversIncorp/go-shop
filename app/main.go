@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// main.
 func main() {
 	// Load .env file
 	var err error
