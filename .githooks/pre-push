@@ -1,7 +1,14 @@
 #!/bin/bash
 
-make lint-fast
-# run sorting imports
+# Запускаем сортировку импортов
 make sort
-# If we made it this far, the commit is allowed
+
+# Запускаем линтер
+make lint-fast
+if [ $? -ne 0 ]; then
+  echo "Linting failed. Push aborted."
+  exit 1
+fi
+
+# Если до этого этапа ошибок не было, разрешаем пуш
 exit 0
