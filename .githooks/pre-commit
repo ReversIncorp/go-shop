@@ -1,0 +1,9 @@
+#!/bin/bash
+
+export PATH=$PATH:$(go env GOPATH)/bin
+
+# Запускаем сортировку импортов
+make sort
+
+# Если до этого этапа ошибок не было, разрешаем пуш
+exit 0
