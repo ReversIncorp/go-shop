@@ -4,6 +4,8 @@ import (
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
 	errorHandling "marketplace/pkg/error_handling"
+
+	"github.com/ztrue/tracerr"
 )
 
 type CategoryUseCase struct {
@@ -29,7 +31,7 @@ func (c *CategoryUseCase) CreateCategory(category entities.Category, uid uint64)
 
 	err = c.categoryRepo.Save(category)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return nil

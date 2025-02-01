@@ -6,12 +6,14 @@ import (
 	"marketplace/internal/domain/enums"
 	"marketplace/internal/domain/repository"
 	errorHandling "marketplace/pkg/error_handling"
+	"marketplace/pkg/utils"
 	"time"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
+	"github.com/ztrue/tracerr"
 )
 
 type UserUseCase struct {
@@ -28,17 +30,21 @@ func NewUserUseCase(userRepo repository.UserRepository, tokenRepo repository.JWT
 func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.SessionDetails, error) {
 	existingUser, err := u.userRepo.FindByEmail(user.Email)
 	if err == nil && existingUser.ID != 0 {
-		return nil, errorHandling.ErrUserExists
+		if utils.IsHttpError(err) {
+			return nil, errorHandling.ErrUserExists
+		} else {
+			return nil, tracerr.Wrap(err)
+		}
 	}
 
 	userID, err := u.userRepo.Create(user)
 	if err != nil {
-		return nil, err
+		return nil, tracerr.Wrap(err)
 	}
 
 	tokens, err := u.createSession(userID, uuid.New().String(), ctx)
 	if err != nil {
-		return nil, err
+		return nil, tracerr.Wrap(err)
 	}
 
 	return tokens, nil
@@ -48,12 +54,16 @@ func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.
 func (u *UserUseCase) Login(email, password string, ctx echo.Context) (*entities.SessionDetails, error) {
 	user, err := u.userRepo.FindByEmail(email)
 	if err != nil || user.Password != password { // Здесь должна быть логика хэширования пароля
-		return nil, errorHandling.ErrInvalidCredentials
+		if utils.IsHttpError(err) {
+			return nil, errorHandling.ErrUserExists
+		} else {
+			return nil, tracerr.Wrap(err)
+		}
 	}
 
 	tokens, err := u.createSession(user.ID, uuid.New().String(), ctx)
 	if err != nil {
-		return nil, err
+		return nil, tracerr.Wrap(err)
 	}
 
 	return tokens, nil
@@ -61,7 +71,15 @@ func (u *UserUseCase) Login(email, password string, ctx echo.Context) (*entities
 
 // GetUserByID Реализация метода GetUserByID.
 func (u *UserUseCase) GetUserByID(id uint64) (entities.User, error) {
-	return u.userRepo.FindByID(id)
+	user, err := u.userRepo.FindByID(id)
+	if err != nil {
+		if utils.IsHttpError(err) {
+			return entities.User{}, errorHandling.ErrUserExists
+		} else {
+			return entities.User{}, tracerr.Wrap(err)
+		}
+	}
+	return user, nil
 }
 
 func (u *UserUseCase) Logout(accessToken string) error {
@@ -82,7 +100,7 @@ func (u *UserUseCase) Logout(accessToken string) error {
 
 		err := u.tokenRepo.DeleteSession(userID, sessionUUID)
 		if err != nil {
-			return err
+			return tracerr.Wrap(err)
 		}
 
 		return nil
@@ -108,11 +126,11 @@ func (u *UserUseCase) UpdateSession(refreshToken string, ctx echo.Context) (*ent
 
 		session, err := u.createSession(uint64(userID), sessionUUID, ctx)
 		if err != nil {
-			return nil, err
+			return nil, tracerr.Wrap(err)
 		}
 		err = u.tokenRepo.SaveSession(uint64(userID), sessionUUID, session)
 		if err != nil {
-			return nil, err
+			return nil, tracerr.Wrap(err)
 		}
 
 		return session, nil
@@ -124,7 +142,7 @@ func (u *UserUseCase) ValidateToken(
 	tokenString string,
 	key []byte,
 	tokenType enums.Token,
-) (*jwt.Token, error) {
+) (*jwt.Token, *errorHandling.ResponseError) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errorHandling.ErrInvalidExpiredToken
@@ -198,11 +216,11 @@ func (u *UserUseCase) createSession(
 
 	accessToken, err := GenerateToken(userID, sessionID, enums.Access, config.GetConfig().JWTKey)
 	if err != nil {
-		return nil, err
+		return nil, tracerr.Wrap(err)
 	}
 	refreshToken, err := GenerateToken(userID, sessionID, enums.Refresh, config.GetConfig().JWTKey)
 	if err != nil {
-		return nil, err
+		return nil, tracerr.Wrap(err)
 	}
 
 	session.ExpiresAt = time.Now().Add(enums.Refresh.Duration()).Unix()
@@ -214,7 +232,7 @@ func (u *UserUseCase) createSession(
 		sessionID,
 		session,
 	); err != nil {
-		return nil, err
+		return nil, tracerr.Wrap(err)
 	}
 
 	return session, nil

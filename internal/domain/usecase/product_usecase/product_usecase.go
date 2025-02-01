@@ -4,6 +4,8 @@ import (
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
 	errorHandling "marketplace/pkg/error_handling"
+
+	"github.com/ztrue/tracerr"
 )
 
 // ProductUseCase реализует интерфейс ProductUseCase.
@@ -32,7 +34,7 @@ func (p *ProductUseCase) CreateProduct(product entities.Product) error {
 
 	err = p.productRepo.Save(product)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return nil
@@ -57,7 +59,7 @@ func (p *ProductUseCase) UpdateProduct(product entities.Product) error {
 
 	err = p.productRepo.Save(product)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return nil
@@ -77,7 +79,7 @@ func (p *ProductUseCase) DeleteProduct(id uint64) error {
 
 	err = p.productRepo.Delete(id)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return nil
