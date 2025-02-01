@@ -49,10 +49,11 @@ func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.
 // Login Реализация метода Login.
 func (u *UserUseCase) Login(email, password string, ctx echo.Context) (*entities.SessionDetails, error) {
 	user, err := u.userRepo.FindByEmail(email)
-	if err != nil { // Здесь должна быть логика хэширования пароля
+	if err != nil {
 		return nil, utils.GetHttpErrorOrTracerrError(err)
 	}
 
+	// Здесь должна быть логика хэширования пароля
 	if user.Password != password {
 		return nil, errorHandling.ErrInvalidCredentials
 	}
@@ -69,11 +70,7 @@ func (u *UserUseCase) Login(email, password string, ctx echo.Context) (*entities
 func (u *UserUseCase) GetUserByID(id uint64) (entities.User, error) {
 	user, err := u.userRepo.FindByID(id)
 	if err != nil {
-		if utils.IsHttpError(err) {
-			return user, errorHandling.ErrUserExists
-		} else {
-			return user, tracerr.Wrap(err)
-		}
+		return user, utils.GetHttpErrorOrTracerrError(err)
 	}
 	return user, nil
 }

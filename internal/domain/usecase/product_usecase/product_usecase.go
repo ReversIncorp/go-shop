@@ -4,6 +4,7 @@ import (
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
 	errorHandling "marketplace/pkg/error_handling"
+	"marketplace/pkg/utils"
 
 	"github.com/ztrue/tracerr"
 )
@@ -42,7 +43,11 @@ func (p *ProductUseCase) CreateProduct(product entities.Product) error {
 
 // GetProductByID получает продукт по ID.
 func (p *ProductUseCase) GetProductByID(id uint64) (entities.Product, error) {
-	return p.productRepo.FindByID(id)
+	product, err := p.productRepo.FindByID(id)
+	if err != nil {
+		return product, utils.GetHttpErrorOrTracerrError(err)
+	}
+	return product, nil
 }
 
 // UpdateProduct обновляет существующий продукт.
@@ -89,5 +94,9 @@ func (p *ProductUseCase) DeleteProduct(id uint64) error {
 func (p *ProductUseCase) GetProductsByFilters(
 	filters entities.ProductSearchParams,
 ) ([]entities.Product, *uint64, error) {
-	return p.productRepo.FindProductsByParams(filters)
+	products, cursor, err := p.productRepo.FindProductsByParams(filters)
+	if err != nil {
+		return nil, nil, tracerr.Wrap(err)
+	}
+	return products, cursor, err
 }

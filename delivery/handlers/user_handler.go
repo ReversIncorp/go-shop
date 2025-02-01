@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
+	"github.com/ztrue/tracerr"
 )
 
 // UserHandler обрабатывает HTTP-запросы для пользователей.
@@ -90,7 +91,11 @@ func (h *UserHandler) RefreshSession(c echo.Context) error {
 
 	session, err := h.userUseCase.UpdateSession(request.Token, c)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid refresh token"})
+		if utils.IsHttpError(err) {
+			return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid refresh token"})
+		} else {
+			return tracerr.Wrap(err)
+		}
 	}
 	return c.JSON(http.StatusOK, session.CleanOutput())
 }
@@ -106,7 +111,11 @@ func (h *UserHandler) Logout(c echo.Context) error {
 
 	err := h.userUseCase.Logout(request.Token)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
+		if utils.IsHttpError(err) {
+			return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
+		} else {
+			return tracerr.Wrap(err)
+		}
 	}
 	return c.NoContent(http.StatusOK)
 }

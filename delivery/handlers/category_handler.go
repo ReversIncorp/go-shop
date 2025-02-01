@@ -4,10 +4,12 @@ import (
 	"marketplace/internal/domain/entities"
 	categoryUsecases "marketplace/internal/domain/usecase/category_usecase"
 	errorHandling "marketplace/pkg/error_handling"
+	"marketplace/pkg/utils"
 	"net/http"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
+	"github.com/ztrue/tracerr"
 )
 
 // CategoryHandler обрабатывает HTTP-запросы для категорий.
@@ -35,7 +37,7 @@ func (h *CategoryHandler) CreateCategory(c echo.Context) error {
 	}
 
 	if err := h.categoryUseCase.CreateCategory(category, uint64(uid)); err != nil {
-		return err
+		return utils.GetHttpErrorOrTracerrError(err)
 	}
 	return c.JSON(http.StatusCreated, category)
 }
@@ -55,7 +57,7 @@ func (h *CategoryHandler) DeleteCategory(c echo.Context) error {
 	}
 
 	if err = h.categoryUseCase.DeleteCategory(uint64ID, uint64(uid)); err != nil {
-		return err
+		return utils.GetHttpErrorOrTracerrError(err)
 	}
 	return c.NoContent(http.StatusNoContent)
 }
@@ -70,7 +72,7 @@ func (h *CategoryHandler) GetAllCategoriesByStore(c echo.Context) error {
 
 	categories, err := h.categoryUseCase.GetAllCategoriesByStore(uint64ID)
 	if err != nil {
-		return errorHandling.ErrInternalServerError
+		return tracerr.Wrap(err)
 	}
 
 	return c.JSON(http.StatusOK, categories)
@@ -86,7 +88,7 @@ func (h *CategoryHandler) GetCategoryByID(c echo.Context) error {
 
 	category, err := h.categoryUseCase.GetCategoryByID(uint64ID)
 	if err != nil {
-		return err
+		return utils.GetHttpErrorOrTracerrError(err)
 	}
 
 	return c.JSON(http.StatusOK, category)
@@ -96,7 +98,7 @@ func (h *CategoryHandler) GetCategoryByID(c echo.Context) error {
 func (h *CategoryHandler) GetAllCategories(c echo.Context) error {
 	category, err := h.categoryUseCase.GetAllCategories()
 	if err != nil {
-		return errorHandling.ErrInternalServerError
+		return tracerr.Wrap(err)
 	}
 
 	return c.JSON(http.StatusOK, category)

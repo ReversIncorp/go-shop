@@ -5,6 +5,8 @@ import (
 	"marketplace/internal/domain/repository"
 
 	errorHandling "marketplace/pkg/error_handling"
+
+	"github.com/ztrue/tracerr"
 )
 
 // StoreUseCase реализует интерфейс StoreUseCase.
@@ -42,8 +44,11 @@ func (s *StoreUseCase) UpdateStore(store entities.Store) error {
 // DeleteStore удаляет магазин по ID.
 func (s *StoreUseCase) DeleteStore(id uint64) error {
 	storeExists, err := s.storeRepo.IsExist(id)
-	if err != nil || !storeExists {
+	if !storeExists {
 		return errorHandling.ErrStoreNotFound
+	}
+	if err != nil {
+		return tracerr.Wrap(err)
 	}
 
 	return s.storeRepo.Delete(id)
@@ -57,7 +62,12 @@ func (s *StoreUseCase) GetAllStores() ([]entities.Store, error) {
 // IsUserStoreAdmin проверка является ли пользователь админом стора.
 func (s *StoreUseCase) IsUserStoreAdmin(storeID uint64, uid uint64) (bool, error) {
 	storeExists, err := s.storeRepo.IsExist(storeID)
-	if err != nil || !storeExists {
+
+	if err != nil {
+		return false, tracerr.Wrap(err)
+	}
+
+	if !storeExists {
 		return false, errorHandling.ErrStoreNotFound
 	}
 
@@ -67,12 +77,22 @@ func (s *StoreUseCase) IsUserStoreAdmin(storeID uint64, uid uint64) (bool, error
 // AttachCategoryToStore добавляет категорию к магазину.
 func (s *StoreUseCase) AttachCategoryToStore(storeID, categoryID uint64) error {
 	categoryExist, err := s.categoryRepo.IsExist(categoryID)
-	if err != nil || !categoryExist {
+
+	if err != nil {
+		return tracerr.Wrap(err)
+	}
+
+	if !categoryExist {
 		return errorHandling.ErrCategoryNotFound
 	}
 
 	isAttached, err := s.storeRepo.IsCategoryAttached(storeID, categoryID)
-	if err != nil || isAttached {
+
+	if err != nil {
+		return tracerr.Wrap(err)
+	}
+
+	if isAttached {
 		return errorHandling.ErrCategoryAttached
 	}
 
@@ -82,12 +102,22 @@ func (s *StoreUseCase) AttachCategoryToStore(storeID, categoryID uint64) error {
 // DetachCategoryFromStore открепляет категорию от магазина.
 func (s *StoreUseCase) DetachCategoryFromStore(storeID, categoryID uint64) error {
 	categoryExist, err := s.categoryRepo.IsExist(categoryID)
-	if err != nil || !categoryExist {
+
+	if err != nil {
+		return tracerr.Wrap(err)
+	}
+
+	if !categoryExist {
 		return errorHandling.ErrCategoryNotFound
 	}
 
 	isAttached, err := s.storeRepo.IsCategoryAttached(storeID, categoryID)
-	if err != nil || !isAttached {
+
+	if err != nil {
+		return tracerr.Wrap(err)
+	}
+
+	if !isAttached {
 		return errorHandling.ErrCategoryNotAttached
 	}
 

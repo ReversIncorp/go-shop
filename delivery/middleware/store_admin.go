@@ -3,6 +3,7 @@ package middleware
 import (
 	usecase "marketplace/internal/domain/usecase/store_usecase"
 	errorHandling "marketplace/pkg/error_handling"
+	"marketplace/pkg/utils"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -26,7 +27,7 @@ func StoreAdminMiddleware(storeUsecase *usecase.StoreUseCase) echo.MiddlewareFun
 
 			isAdmin, err := storeUsecase.IsUserStoreAdmin(storeID, uid)
 			if err != nil {
-				return err
+				return utils.GetHttpErrorOrTracerrError(err)
 			}
 			if !isAdmin {
 				return errorHandling.ErrUserNotAdminStore

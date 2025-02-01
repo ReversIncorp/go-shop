@@ -4,6 +4,7 @@ import (
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
 	errorHandling "marketplace/pkg/error_handling"
+	"marketplace/pkg/utils"
 
 	"github.com/ztrue/tracerr"
 )
@@ -38,7 +39,11 @@ func (c *CategoryUseCase) CreateCategory(category entities.Category, uid uint64)
 }
 
 func (c *CategoryUseCase) GetCategoryByID(id uint64) (entities.Category, error) {
-	return c.categoryRepo.FindByID(id)
+	category, err := c.categoryRepo.FindByID(id)
+	if err != nil {
+		return category, utils.GetHttpErrorOrTracerrError(err)
+	}
+	return category, nil
 }
 
 func (c *CategoryUseCase) DeleteCategory(id, uid uint64) error {
@@ -54,7 +59,7 @@ func (c *CategoryUseCase) DeleteCategory(id, uid uint64) error {
 
 	err = c.categoryRepo.Delete(id)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return nil

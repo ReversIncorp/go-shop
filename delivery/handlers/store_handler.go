@@ -4,11 +4,13 @@ import (
 	"marketplace/internal/domain/entities"
 	storeUsecases "marketplace/internal/domain/usecase/store_usecase"
 	errorHandling "marketplace/pkg/error_handling"
+	"marketplace/pkg/utils"
 	"net/http"
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
+	"github.com/ztrue/tracerr"
 )
 
 // StoreHandler обрабатывает HTTP-запросы для магазинов.
@@ -43,7 +45,7 @@ func (h *StoreHandler) CreateStore(c echo.Context) error {
 	}
 
 	if err := h.storeUseCase.CreateStore(store, uint64(uid)); err != nil {
-		return errorHandling.ErrInternalServerError
+		return tracerr.Wrap(err)
 	}
 
 	return c.JSON(http.StatusCreated, store)
@@ -58,7 +60,7 @@ func (h *StoreHandler) GetStoreByID(c echo.Context) error {
 	}
 	store, err := h.storeUseCase.GetStoreByID(uint64ID)
 	if err != nil {
-		return errorHandling.ErrStoreNotFound
+		return utils.GetHttpErrorOrTracerrError(err)
 	}
 
 	return c.JSON(http.StatusOK, store)
@@ -80,7 +82,7 @@ func (h *StoreHandler) UpdateStore(c echo.Context) error {
 	store.ID = storeID
 
 	if err = h.storeUseCase.UpdateStore(store); err != nil {
-		return errorHandling.ErrInternalServerError
+		return tracerr.Wrap(err)
 	}
 
 	return c.JSON(http.StatusOK, store)
@@ -113,7 +115,7 @@ func (h *StoreHandler) GetStoresByFilters(c echo.Context) error {
 
 	products, nextCursor, err := h.storeUseCase.GetStoresByFilters(searchParams)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
@@ -161,7 +163,7 @@ func (h *StoreHandler) DetachCategoryFromStore(c echo.Context) error {
 	}
 
 	if err = h.storeUseCase.DetachCategoryFromStore(storeID, categoryID); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return c.NoContent(http.StatusNoContent)
