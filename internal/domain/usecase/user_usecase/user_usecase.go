@@ -30,11 +30,7 @@ func NewUserUseCase(userRepo repository.UserRepository, tokenRepo repository.JWT
 func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.SessionDetails, error) {
 	existingUser, err := u.userRepo.FindByEmail(user.Email)
 	if err == nil && existingUser.ID != 0 {
-		if utils.IsHttpError(err) {
-			return nil, errorHandling.ErrUserExists
-		} else {
-			return nil, tracerr.Wrap(err)
-		}
+		return nil, errorHandling.ErrUserExists
 	}
 
 	userID, err := u.userRepo.Create(user)
@@ -53,12 +49,12 @@ func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.
 // Login Реализация метода Login.
 func (u *UserUseCase) Login(email, password string, ctx echo.Context) (*entities.SessionDetails, error) {
 	user, err := u.userRepo.FindByEmail(email)
-	if err != nil || user.Password != password { // Здесь должна быть логика хэширования пароля
-		if utils.IsHttpError(err) {
-			return nil, errorHandling.ErrUserExists
-		} else {
-			return nil, tracerr.Wrap(err)
-		}
+	if err != nil { // Здесь должна быть логика хэширования пароля
+		return nil, utils.GetHttpErrorOrTracerrError(err)
+	}
+
+	if user.Password != password {
+		return nil, errorHandling.ErrInvalidCredentials
 	}
 
 	tokens, err := u.createSession(user.ID, uuid.New().String(), ctx)
@@ -74,9 +70,9 @@ func (u *UserUseCase) GetUserByID(id uint64) (entities.User, error) {
 	user, err := u.userRepo.FindByID(id)
 	if err != nil {
 		if utils.IsHttpError(err) {
-			return entities.User{}, errorHandling.ErrUserExists
+			return user, errorHandling.ErrUserExists
 		} else {
-			return entities.User{}, tracerr.Wrap(err)
+			return user, tracerr.Wrap(err)
 		}
 	}
 	return user, nil

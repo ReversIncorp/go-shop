@@ -4,6 +4,7 @@ import (
 	"marketplace/internal/domain/entities"
 	userUsecase "marketplace/internal/domain/usecase/user_usecase"
 	errorHandling "marketplace/pkg/error_handling"
+	"marketplace/pkg/utils"
 	"net/http"
 	"strconv"
 
@@ -36,9 +37,8 @@ func (h *UserHandler) Register(c echo.Context) error {
 	// Вызов метода Register и получение токенов
 	tokens, err := h.userUseCase.Register(user, c)
 	if err != nil {
-		return err
+		return utils.GetHttpErrorOrTracerrError(err)
 	}
-
 	// Возвращаем информацию о пользователе и токенах
 	return c.JSON(http.StatusCreated, tokens.CleanOutput())
 }
