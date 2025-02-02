@@ -26,7 +26,7 @@ func NewStoreRepository(db *sql.DB) repository.StoreRepository {
 func (r *storeRepositoryImpl) IsExist(id uint64) (bool, error) {
 	var exists bool
 	err := r.db.QueryRow(
-		"SELECT EXISTS(SELECT 1 FROM categories WHERE id = $1)",
+		"SELECT EXISTS(SELECT 1 FROM stores WHERE id = $1)",
 		id,
 	).Scan(&exists)
 
