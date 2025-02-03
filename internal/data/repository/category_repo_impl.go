@@ -23,20 +23,17 @@ func NewCategoryRepository(db *sql.DB) repository.CategoryRepository {
 }
 
 func (r *categoryRepositoryImpl) IsExist(id uint64) (bool, error) {
-	var existingStoreID uint64
+	var exists bool
 	err := r.db.QueryRow(
-		"SELECT id FROM categories WHERE id = $1",
+		"SELECT EXISTS(SELECT 1 FROM categories WHERE id = $1)",
 		id,
-	).Scan(&existingStoreID)
+	).Scan(&exists)
 
-	if errors.Is(err, sql.ErrNoRows) {
-		return false, nil
-	}
 	if err != nil {
 		return false, tracerr.Wrap(err)
 	}
 
-	return true, nil
+	return exists, nil
 }
 
 func (r *categoryRepositoryImpl) Save(category entities.Category) error {
@@ -114,7 +111,7 @@ func (r *categoryRepositoryImpl) FindByID(id uint64) (entities.Category, error) 
 		return entities.Category{}, errorHandling.ErrCategoryNotFound
 	}
 	if err != nil {
-		return entities.Category{}, err
+		return entities.Category{}, tracerr.Wrap(err)
 	}
 
 	return category, nil

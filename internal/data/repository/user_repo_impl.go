@@ -96,7 +96,7 @@ func (r *userRepositoryImpl) FindByID(id uint64) (entities.User, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return entities.User{}, errorHandling.ErrUserNotFound
 		}
-		return entities.User{}, err
+		return entities.User{}, tracerr.Wrap(err)
 	}
 	return user, nil
 }
