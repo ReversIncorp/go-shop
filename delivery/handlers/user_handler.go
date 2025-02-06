@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
+	"github.com/ztrue/tracerr"
 )
 
 // UserHandler обрабатывает HTTP-запросы для пользователей.
@@ -36,7 +37,7 @@ func (h *UserHandler) Register(c echo.Context) error {
 	// Вызов метода Register и получение токенов
 	tokens, err := h.userUseCase.Register(user, c)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	// Возвращаем информацию о пользователе и токенах
@@ -56,7 +57,7 @@ func (h *UserHandler) Login(c echo.Context) error {
 	// Вызов метода Login и получение токенов
 	tokens, err := h.userUseCase.Login(credentials.Email, credentials.Password, c)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	// Возвращаем токены
@@ -72,7 +73,7 @@ func (h *UserHandler) GetUserByID(c echo.Context) error {
 	}
 	user, err := h.userUseCase.GetUserByID(uint64ID)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return c.JSON(http.StatusOK, user)

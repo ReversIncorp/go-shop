@@ -250,7 +250,7 @@ func (r *productRepositoryImpl) processProductRows(rows *sql.Rows, limit *uint64
 
 	// Проверяем ошибки чтения строк
 	if err := rows.Err(); err != nil {
-		return nil, nil, err
+		return nil, nil, tracerr.Wrap(err)
 	}
 
 	// Если данных меньше лимита, следующего курсора нет

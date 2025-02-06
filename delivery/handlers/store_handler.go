@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
+	"github.com/ztrue/tracerr"
 )
 
 // StoreHandler обрабатывает HTTP-запросы для магазинов.
@@ -95,7 +96,7 @@ func (h *StoreHandler) DeleteStore(c echo.Context) error {
 	}
 
 	if err = h.storeUseCase.DeleteStore(uint64ID); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	return c.NoContent(http.StatusNoContent)
 }
@@ -113,7 +114,7 @@ func (h *StoreHandler) GetStoresByFilters(c echo.Context) error {
 
 	products, nextCursor, err := h.storeUseCase.GetStoresByFilters(searchParams)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
@@ -140,7 +141,7 @@ func (h *StoreHandler) AttachCategoryToStore(c echo.Context) error {
 	}
 
 	if err = h.storeUseCase.AttachCategoryToStore(storeID, request.CategoryID); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{"message": "Category attached to store successfully"})
@@ -161,7 +162,7 @@ func (h *StoreHandler) DetachCategoryFromStore(c echo.Context) error {
 	}
 
 	if err = h.storeUseCase.DetachCategoryFromStore(storeID, categoryID); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return c.NoContent(http.StatusNoContent)

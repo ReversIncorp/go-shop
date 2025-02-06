@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
+	"github.com/ztrue/tracerr"
 )
 
 // ProductHandler обрабатывает HTTP-запросы для продуктов.
@@ -44,7 +45,7 @@ func (h *ProductHandler) CreateProduct(c echo.Context) error {
 	product.StoreID = storeID
 
 	if err = h.productUseCase.CreateProduct(product); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	return c.JSON(http.StatusCreated, product)
 }
@@ -58,7 +59,7 @@ func (h *ProductHandler) GetProductByID(c echo.Context) error {
 	}
 	product, err := h.productUseCase.GetProductByID(productID)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return c.JSON(http.StatusOK, product)
@@ -88,7 +89,7 @@ func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 	product.ID = productID
 
 	if err = h.productUseCase.UpdateProduct(product); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return c.JSON(http.StatusOK, product)
@@ -103,7 +104,7 @@ func (h *ProductHandler) DeleteProduct(c echo.Context) error {
 	}
 
 	if err = h.productUseCase.DeleteProduct(productID); err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 	return c.NoContent(http.StatusNoContent)
 }
@@ -120,7 +121,7 @@ func (h *ProductHandler) GetProductsByFilters(c echo.Context) error {
 
 	products, nextCursor, err := h.productUseCase.GetProductsByFilters(searchParams)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{

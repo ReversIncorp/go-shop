@@ -24,20 +24,17 @@ func NewStoreRepository(db *sql.DB) repository.StoreRepository {
 }
 
 func (r *storeRepositoryImpl) IsExist(id uint64) (bool, error) {
-	var existingStoreID int64
+	var exists bool
 	err := r.db.QueryRow(
-		"SELECT id FROM stores WHERE id = $1",
+		"SELECT EXISTS(SELECT 1 FROM stores WHERE id = $1)",
 		id,
-	).Scan(&existingStoreID)
+	).Scan(&exists)
 
-	if errors.Is(err, sql.ErrNoRows) {
-		return false, tracerr.Wrap(errors.New("store not found"))
-	}
 	if err != nil {
 		return false, tracerr.Wrap(err)
 	}
 
-	return true, nil
+	return exists, nil
 }
 
 func (r *storeRepositoryImpl) Save(store entities.Store, uid uint64) error {
@@ -71,7 +68,7 @@ func (r *storeRepositoryImpl) Save(store entities.Store, uid uint64) error {
 	if err != nil {
 		err = tx.Rollback()
 		if err != nil {
-			return err
+			return tracerr.Wrap(err)
 		}
 		return tracerr.Wrap(fmt.Errorf("failed to add user as store admin: %w", err))
 	}
