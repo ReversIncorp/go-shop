@@ -146,5 +146,4 @@ func (s *StoreUseCase) GetStoresByFilters(filters entities.StoreSearchParams) ([
 	}
 
 	return stores, id, nil
-
 }
