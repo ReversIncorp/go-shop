@@ -38,9 +38,9 @@ func NewProductHandler(
 // @Param store_id path int true "ID магазина"
 // @Param product body entities.Product true "Данные продукта"
 // @Success 201 {object} entities.Product "Продукт создан"
-// @Failure 400 {object} errorhandling.ErrorResponse "Ошибка валидации"
-// @Failure 500 {object} errorhandling.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /stores/{store_id}/products [post]
+// @Failure 400 {object} errorhandling.ResponseError "Ошибка валидации"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /stores/{store_id}/products [post].
 func (h *ProductHandler) CreateProduct(c echo.Context) error {
 	var product entities.Product
 	if err := c.Bind(&product); err != nil {
@@ -68,10 +68,10 @@ func (h *ProductHandler) CreateProduct(c echo.Context) error {
 // @Produces application/json
 // @Param id path int true "ID продукта"
 // @Success 200 {object} entities.Product "Информация о продукте"
-// @Failure 400 {object} errorhandling.ErrorResponse "Неверный ID"
-// @Failure 404 {object} errorhandling.ErrorResponse "Продукт не найден"
-// @Failure 500 {object} errorhandling.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /products/{id} [get]
+// @Failure 400 {object} errorhandling.ResponseError "Неверный ID"
+// @Failure 404 {object} errorhandling.ResponseError "Продукт не найден"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /products/{id} [get].
 func (h *ProductHandler) GetProductByID(c echo.Context) error {
 	id := c.Param("id")
 	productID, err := strconv.ParseUint(id, 10, 64)
@@ -96,10 +96,10 @@ func (h *ProductHandler) GetProductByID(c echo.Context) error {
 // @Param store_id path int true "ID магазина"
 // @Param product body entities.Product true "Обновленные данные продукта"
 // @Success 200 {object} entities.Product "Продукт обновлен"
-// @Failure 400 {object} errorhandling.ErrorResponse "Ошибка валидации"
-// @Failure 404 {object} errorhandling.ErrorResponse "Продукт не найден"
-// @Failure 500 {object} errorhandling.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /stores/{store_id}/products/{id} [put]
+// @Failure 400 {object} errorhandling.ResponseError "Ошибка валидации"
+// @Failure 404 {object} errorhandling.ResponseError "Продукт не найден"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /stores/{store_id}/products/{id} [put].
 func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 	var product entities.Product
 
@@ -136,10 +136,10 @@ func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 // @Produces application/json
 // @Param id path int true "ID продукта"
 // @Success 204 {string} string "Продукт удален"
-// @Failure 400 {object} errorhandling.ErrorResponse "Неверный ID"
-// @Failure 404 {object} errorhandling.ErrorResponse "Продукт не найден"
-// @Failure 500 {object} errorhandling.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /products/{id} [delete]
+// @Failure 400 {object} errorhandling.ResponseError "Неверный ID"
+// @Failure 404 {object} errorhandling.ResponseError "Продукт не найден"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /products/{id} [delete].
 func (h *ProductHandler) DeleteProduct(c echo.Context) error {
 	id := c.Param("id")
 	productID, err := strconv.ParseUint(id, 10, 64)
@@ -161,9 +161,9 @@ func (h *ProductHandler) DeleteProduct(c echo.Context) error {
 // @Produces application/json
 // @Param searchParams body entities.ProductSearchParams true "Параметры поиска"
 // @Success 200 {object} map[string]interface{} "Список продуктов"
-// @Failure 400 {object} errorhandling.ErrorResponse "Ошибка валидации"
-// @Failure 500 {object} errorhandling.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /products/search [post]
+// @Failure 400 {object} errorhandling.ResponseError "Ошибка валидации"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /products/search [post].
 func (h *ProductHandler) GetProductsByFilters(c echo.Context) error {
 	var searchParams entities.ProductSearchParams
 

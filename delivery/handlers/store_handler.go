@@ -37,10 +37,10 @@ func NewStoreHandler(
 // @Produces application/json
 // @Param store body entities.Store true "Данные магазина"
 // @Success 201 {object} entities.Store "Магазин создан"
-// @Failure 400 {object} errorhandling.ErrorResponse "Ошибка валидации"
-// @Failure 401 {object} errorhandling.ErrorResponse "Не авторизован"
-// @Failure 500 {object} errorhandling.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /stores [post]
+// @Failure 400 {object} errorhandling.ResponseError "Ошибка валидации"
+// @Failure 401 {object} errorhandling.ResponseError "Не авторизован"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /stores [post].
 func (h *StoreHandler) CreateStore(c echo.Context) error {
 	var store entities.Store
 
@@ -68,9 +68,9 @@ func (h *StoreHandler) CreateStore(c echo.Context) error {
 // @Produces application/json
 // @Param store_id path int true "ID магазина"
 // @Success 200 {object} entities.Store "Информация о магазине"
-// @Failure 400 {object} errorhandling.ErrorResponse "Неверный ID"
-// @Failure 404 {object} errorhandling.ErrorResponse "Магазин не найден"
-// @Router /stores/{store_id} [get]
+// @Failure 400 {object} errorhandling.ResponseError "Неверный ID"
+// @Failure 404 {object} errorhandling.ResponseError "Магазин не найден"
+// @Router /stores/{store_id} [get].
 func (h *StoreHandler) GetStoreByID(c echo.Context) error {
 	id := c.Param("store_id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
@@ -94,10 +94,10 @@ func (h *StoreHandler) GetStoreByID(c echo.Context) error {
 // @Param store_id path int true "ID магазина"
 // @Param store body entities.Store true "Обновленные данные магазина"
 // @Success 200 {object} entities.Store "Магазин обновлен"
-// @Failure 400 {object} errorhandling.ErrorResponse "Ошибка валидации"
-// @Failure 404 {object} errorhandling.ErrorResponse "Магазин не найден"
-// @Failure 500 {object} errorhandling.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /stores/{store_id} [put]
+// @Failure 400 {object} errorhandling.ResponseError "Ошибка валидации"
+// @Failure 404 {object} errorhandling.ResponseError "Магазин не найден"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /stores/{store_id} [put].
 func (h *StoreHandler) UpdateStore(c echo.Context) error {
 	var store entities.Store
 	id := c.Param("store_id")
@@ -126,10 +126,10 @@ func (h *StoreHandler) UpdateStore(c echo.Context) error {
 // @Produces application/json
 // @Param store_id path int true "ID магазина"
 // @Success 204 {string} string "Магазин удален"
-// @Failure 400 {object} errorhandling.ErrorResponse "Неверный ID"
-// @Failure 404 {object} errorhandling.ErrorResponse "Магазин не найден"
-// @Failure 500 {object} errorhandling.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /stores/{store_id} [delete]
+// @Failure 400 {object} errorhandling.ResponseError "Неверный ID"
+// @Failure 404 {object} errorhandling.ResponseError "Магазин не найден"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /stores/{store_id} [delete].
 func (h *StoreHandler) DeleteStore(c echo.Context) error {
 	id := c.Param("store_id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
@@ -151,9 +151,9 @@ func (h *StoreHandler) DeleteStore(c echo.Context) error {
 // @Produces application/json
 // @Param searchParams body entities.StoreSearchParams true "Параметры поиска"
 // @Success 200 {object} map[string]interface{} "Список магазинов"
-// @Failure 400 {object} errorhandling.ErrorResponse "Ошибка валидации"
-// @Failure 500 {object} errorhandling.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /stores/search [post]
+// @Failure 400 {object} errorhandling.ResponseError "Ошибка валидации"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /stores/search [post].
 func (h *StoreHandler) GetStoresByFilters(c echo.Context) error {
 	var searchParams entities.StoreSearchParams
 
@@ -185,9 +185,9 @@ func (h *StoreHandler) GetStoresByFilters(c echo.Context) error {
 // @Param store_id path int true "ID магазина"
 // @Param request body object true "ID категории" {"category_id": "int"}
 // @Success 200 {object} map[string]interface{} "Категория привязана"
-// @Failure 400 {object} errorhandling.ErrorResponse "Ошибка валидации"
-// @Failure 500 {object} errorhandling.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /stores/{store_id}/categories [post]
+// @Failure 400 {object} errorhandling.ResponseError "Ошибка валидации"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /stores/{store_id}/categories [post].
 func (h *StoreHandler) AttachCategoryToStore(c echo.Context) error {
 	var request struct {
 		CategoryID uint64 `json:"category_id" validate:"required"`
@@ -218,9 +218,9 @@ func (h *StoreHandler) AttachCategoryToStore(c echo.Context) error {
 // @Param store_id path int true "ID магазина"
 // @Param category_id path int true "ID категории"
 // @Success 204 {string} string "Категория отвязана"
-// @Failure 400 {object} errorhandling.ErrorResponse "Неверные ID"
-// @Failure 500 {object} errorhandling.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /stores/{store_id}/categories/{category_id} [delete]
+// @Failure 400 {object} errorhandling.ResponseError "Неверные ID"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /stores/{store_id}/categories/{category_id} [delete].
 func (h *StoreHandler) DetachCategoryFromStore(c echo.Context) error {
 	storeIDParam := c.Param("store_id")
 	storeID, err := strconv.ParseUint(storeIDParam, 10, 64)

@@ -261,9 +261,9 @@ swag init -g app/main.go -o api/swagger/api
 - **JSON спецификация**: http://localhost:8080/swagger/doc.json
 
 ### Структура ошибок
-API использует единую структуру для ошибок `ErrorResponse` из пакета `errorhandling`:
+API использует единую структуру для ошибок `ResponseError` из пакета `errorhandling`:
 ```go
-type ErrorResponse struct {
+type ResponseError struct {
     Code    int    `json:"code"`    // HTTP статус-код
     Details string `json:"details"` // Сообщение для пользователя
     Err     error  `json:"-"`       // Внутренняя ошибка (не отправляется клиенту)
@@ -280,7 +280,7 @@ type ErrorResponse struct {
 // @Produce json
 // @Param user body entities.User true "Данные пользователя"
 // @Success 201 {object} entities.User
-// @Failure 400 {object} errorhandling.ErrorResponse
+// @Failure 400 {object} errorhandling.ResponseError
 // @Router /users [post]
 ```
 

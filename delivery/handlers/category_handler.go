@@ -29,10 +29,10 @@ func NewCategoryHandler(categoryUseCase *categoryUsecases.CategoryUseCase) *Cate
 // @Produces application/json
 // @Param category body entities.Category true "Данные категории"
 // @Success 201 {object} entities.Category "Категория создана"
-// @Failure 400 {object} errorhandling.ErrorResponse "Ошибка валидации"
-// @Failure 401 {object} errorhandling.ErrorResponse "Не авторизован"
-// @Failure 500 {object} errorhandling.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /categories [post]
+// @Failure 400 {object} errorhandling.ResponseError "Ошибка валидации"
+// @Failure 401 {object} errorhandling.ResponseError "Не авторизован"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /categories [post].
 func (h *CategoryHandler) CreateCategory(c echo.Context) error {
 	var category entities.Category
 
@@ -59,11 +59,11 @@ func (h *CategoryHandler) CreateCategory(c echo.Context) error {
 // @Produces application/json
 // @Param id path int true "ID категории"
 // @Success 204 {string} string "Категория удалена"
-// @Failure 400 {object} errorhandling.ErrorResponse "Неверный ID"
-// @Failure 401 {object} errorhandling.ErrorResponse "Не авторизован"
-// @Failure 404 {object} errorhandling.ErrorResponse "Категория не найдена"
-// @Failure 500 {object} errorhandling.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /categories/{id} [delete]
+// @Failure 400 {object} errorhandling.ResponseError "Неверный ID"
+// @Failure 401 {object} errorhandling.ResponseError "Не авторизован"
+// @Failure 404 {object} errorhandling.ResponseError "Категория не найдена"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /categories/{id} [delete].
 func (h *CategoryHandler) DeleteCategory(c echo.Context) error {
 	id := c.Param("id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
@@ -90,9 +90,9 @@ func (h *CategoryHandler) DeleteCategory(c echo.Context) error {
 // @Produces application/json
 // @Param store_id path int true "ID магазина"
 // @Success 200 {array} entities.Category "Список категорий"
-// @Failure 400 {object} errorhandling.ErrorResponse "Неверный ID магазина"
-// @Failure 500 {object} errorhandling.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /stores/{store_id}/categories [get]
+// @Failure 400 {object} errorhandling.ResponseError "Неверный ID магазина"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /stores/{store_id}/categories [get].
 func (h *CategoryHandler) GetAllCategoriesByStore(c echo.Context) error {
 	id := c.Param("store_id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
@@ -115,10 +115,10 @@ func (h *CategoryHandler) GetAllCategoriesByStore(c echo.Context) error {
 // @Produces application/json
 // @Param id path int true "ID категории"
 // @Success 200 {object} entities.Category "Информация о категории"
-// @Failure 400 {object} errorhandling.ErrorResponse "Неверный ID"
-// @Failure 404 {object} errorhandling.ErrorResponse "Категория не найдена"
-// @Failure 500 {object} errorhandling.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /categories/{id} [get]
+// @Failure 400 {object} errorhandling.ResponseError "Неверный ID"
+// @Failure 404 {object} errorhandling.ResponseError "Категория не найдена"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /categories/{id} [get].
 func (h *CategoryHandler) GetCategoryByID(c echo.Context) error {
 	id := c.Param("id")
 	uint64ID, err := strconv.ParseUint(id, 10, 64)
@@ -140,8 +140,8 @@ func (h *CategoryHandler) GetCategoryByID(c echo.Context) error {
 // @Tags categories
 // @Produces application/json
 // @Success 200 {array} entities.Category "Список всех категорий"
-// @Failure 500 {object} errorhandling.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /categories [get]
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /categories [get].
 func (h *CategoryHandler) GetAllCategories(c echo.Context) error {
 	category, err := h.categoryUseCase.GetAllCategories()
 	if err != nil {

@@ -44,7 +44,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -76,19 +76,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Ошибка валидации",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "401": {
                         "description": "Не авторизован",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -120,19 +120,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Неверный ID",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "404": {
                         "description": "Категория не найдена",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -162,25 +162,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Неверный ID",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "401": {
                         "description": "Не авторизован",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "404": {
                         "description": "Категория не найдена",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -215,13 +215,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Ошибка валидации",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -253,19 +253,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Неверный ID",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "404": {
                         "description": "Продукт не найден",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -295,19 +295,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Неверный ID",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "404": {
                         "description": "Продукт не найден",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -341,19 +341,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Ошибка валидации",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "401": {
                         "description": "Не авторизован",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -388,13 +388,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Ошибка валидации",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -426,13 +426,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Неверный ID",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "404": {
                         "description": "Магазин не найден",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -471,19 +471,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Ошибка валидации",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "404": {
                         "description": "Магазин не найден",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -513,19 +513,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Неверный ID",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "404": {
                         "description": "Магазин не найден",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -560,13 +560,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Неверный ID магазина",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -606,13 +606,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Ошибка валидации",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -651,13 +651,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Неверные ID",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -698,13 +698,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Ошибка валидации",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -752,19 +752,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Ошибка валидации",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "404": {
                         "description": "Продукт не найден",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -799,19 +799,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Ошибка валидации",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "401": {
                         "description": "Неверные учетные данные",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -845,7 +845,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Ошибка при выходе",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -880,7 +880,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Неверный refresh token",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -915,13 +915,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Ошибка валидации",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -953,19 +953,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Неверный ID",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "404": {
                         "description": "Пользователь не найден",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
                         "schema": {
-                            "$ref": "#/definitions/errorhandling.ErrorResponse"
+                            "$ref": "#/definitions/errorhandling.ResponseError"
                         }
                     }
                 }
@@ -1147,7 +1147,7 @@ const docTemplate = `{
                 }
             }
         },
-        "errorhandling.ErrorResponse": {
+        "errorhandling.ResponseError": {
             "type": "object",
             "properties": {
                 "code": {
