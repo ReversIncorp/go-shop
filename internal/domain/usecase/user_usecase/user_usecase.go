@@ -125,7 +125,7 @@ func (u *UserUseCase) ValidateToken(
 	tokenString string,
 	key []byte,
 	tokenType enums.Token,
-) (*jwt.Token, *errorHandling.ErrorResponse) {
+) (*jwt.Token, *errorHandling.ResponseError) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errorHandling.ErrInvalidExpiredToken
