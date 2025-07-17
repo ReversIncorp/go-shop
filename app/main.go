@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	_ "marketplace/docs"
+	_ "marketplace/api/swagger/api"
 	"marketplace/pkg/di"
 	errorHandling "marketplace/pkg/error_handling"
 
