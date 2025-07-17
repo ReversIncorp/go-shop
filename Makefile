@@ -24,7 +24,7 @@ sort:
 	goimports -w .
 
 swagger:
-	RUN swag init -g app/main.go
+	swag init -g app/main.go
 
 test:
 	go test ./...
