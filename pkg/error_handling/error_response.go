@@ -1,15 +1,15 @@
 package errorhandling
 
-// ResponseError - структура для представления ошибок и отправки их в ответе.
-type ResponseError struct {
+// ErrorResponse - структура для представления ошибок и отправки их в ответе.
+type ErrorResponse struct {
 	Code    int    `json:"code"`    // HTTP статус-код
 	Details string `json:"details"` // Сообщение для пользователя
 	Err     error  `json:"-"`       // Внутренняя ошибка, не отправляется клиенту
 }
 
-// NewResponseError - конструктор для создания ошибок.
-func NewResponseError(code int, details string, err error) *ResponseError {
-	return &ResponseError{
+// NewErrorResponse - конструктор для создания ошибок.
+func NewErrorResponse(code int, details string, err error) *ErrorResponse {
+	return &ErrorResponse{
 		Code:    code,
 		Details: details,
 		Err:     err,
@@ -17,7 +17,7 @@ func NewResponseError(code int, details string, err error) *ResponseError {
 }
 
 // Error - метод, который возвращает строку ошибки.
-func (e *ResponseError) Error() string {
+func (e *ErrorResponse) Error() string {
 	if e.Err != nil {
 		return e.Err.Error()
 	}

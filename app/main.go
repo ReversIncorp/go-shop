@@ -2,12 +2,33 @@ package main
 
 import (
 	"fmt"
+	_ "marketplace/docs"
 	"marketplace/pkg/di"
 	errorHandling "marketplace/pkg/error_handling"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 )
+
+// @title Go Shop API
+// @version 1.0
+// @description REST API для маркетплейса на Go с JWT аутентификацией, управлением магазинами, продуктами и категориями
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name Go Shop API Support
+// @contact.url https://github.com/ReversIncorp/go-shop
+// @contact.email a.savko.developer@goshop.com
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8080
+// @BasePath /
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Введите "Bearer" за которым следует пробел и JWT токен.
 
 // main.
 func main() {

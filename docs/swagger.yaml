@@ -1,0 +1,777 @@
+basePath: /
+definitions:
+  entities.Category:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  entities.LoginCredentials:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  entities.Product:
+    properties:
+      category_id:
+        type: integer
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+      quantity:
+        type: integer
+      store_id:
+        type: integer
+      updated_at:
+        type: string
+    required:
+    - category_id
+    - description
+    - name
+    - price
+    - quantity
+    type: object
+  entities.ProductSearchParams:
+    properties:
+      category_id:
+        type: integer
+      cursor:
+        type: integer
+      limit:
+        type: integer
+      max_price:
+        type: number
+      min_price:
+        type: number
+      name:
+        type: string
+      store_id:
+        type: integer
+    required:
+    - cursor
+    - limit
+    type: object
+  entities.Store:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+    required:
+    - description
+    - name
+    type: object
+  entities.StoreSearchParams:
+    properties:
+      category_id:
+        type: integer
+      cursor:
+        type: integer
+      limit:
+        type: integer
+      name:
+        type: string
+    required:
+    - cursor
+    - limit
+    type: object
+  entities.User:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      is_seller:
+        type: boolean
+      name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - is_seller
+    - name
+    - password
+    type: object
+  errorhandling.ErrorResponse:
+    properties:
+      code:
+        description: HTTP статус-код
+        type: integer
+      details:
+        description: Сообщение для пользователя
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: a.savko.developer@goshop.com
+    name: Go Shop API Support
+    url: https://github.com/ReversIncorp/go-shop
+  description: REST API для маркетплейса на Go с JWT аутентификацией, управлением
+    магазинами, продуктами и категориями
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Go Shop API
+  version: "1.0"
+paths:
+  /categories:
+    get:
+      description: Возвращает список всех категорий в системе
+      responses:
+        "200":
+          description: Список всех категорий
+          schema:
+            items:
+              $ref: '#/definitions/entities.Category'
+            type: array
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Получение всех категорий
+      tags:
+      - categories
+    post:
+      description: Создает новую категорию для магазина
+      parameters:
+      - description: Данные категории
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Category'
+      responses:
+        "201":
+          description: Категория создана
+          schema:
+            $ref: '#/definitions/entities.Category'
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Создание категории
+      tags:
+      - categories
+  /categories/{id}:
+    delete:
+      description: Удаляет категорию из системы
+      parameters:
+      - description: ID категории
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Категория удалена
+          schema:
+            type: string
+        "400":
+          description: Неверный ID
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "404":
+          description: Категория не найдена
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Удаление категории
+      tags:
+      - categories
+    get:
+      description: Возвращает информацию о категории по ее ID
+      parameters:
+      - description: ID категории
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: Информация о категории
+          schema:
+            $ref: '#/definitions/entities.Category'
+        "400":
+          description: Неверный ID
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "404":
+          description: Категория не найдена
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Получение категории по ID
+      tags:
+      - categories
+  /products/{id}:
+    delete:
+      description: Удаляет продукт из системы
+      parameters:
+      - description: ID продукта
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Продукт удален
+          schema:
+            type: string
+        "400":
+          description: Неверный ID
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "404":
+          description: Продукт не найден
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Удаление продукта
+      tags:
+      - products
+    get:
+      description: Возвращает информацию о продукте по его ID
+      parameters:
+      - description: ID продукта
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: Информация о продукте
+          schema:
+            $ref: '#/definitions/entities.Product'
+        "400":
+          description: Неверный ID
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "404":
+          description: Продукт не найден
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Получение продукта по ID
+      tags:
+      - products
+  /products/search:
+    post:
+      description: Возвращает список продуктов с пагинацией и фильтрацией
+      parameters:
+      - description: Параметры поиска
+        in: body
+        name: searchParams
+        required: true
+        schema:
+          $ref: '#/definitions/entities.ProductSearchParams'
+      responses:
+        "200":
+          description: Список продуктов
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Получение продуктов по фильтрам
+      tags:
+      - products
+  /stores:
+    post:
+      description: Создает новый магазин для пользователя
+      parameters:
+      - description: Данные магазина
+        in: body
+        name: store
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Store'
+      responses:
+        "201":
+          description: Магазин создан
+          schema:
+            $ref: '#/definitions/entities.Store'
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Создание магазина
+      tags:
+      - stores
+  /stores/{store_id}:
+    delete:
+      description: Удаляет магазин из системы
+      parameters:
+      - description: ID магазина
+        in: path
+        name: store_id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Магазин удален
+          schema:
+            type: string
+        "400":
+          description: Неверный ID
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "404":
+          description: Магазин не найден
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Удаление магазина
+      tags:
+      - stores
+    get:
+      description: Возвращает информацию о магазине по его ID
+      parameters:
+      - description: ID магазина
+        in: path
+        name: store_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: Информация о магазине
+          schema:
+            $ref: '#/definitions/entities.Store'
+        "400":
+          description: Неверный ID
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "404":
+          description: Магазин не найден
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Получение магазина по ID
+      tags:
+      - stores
+    put:
+      description: Обновляет информацию о магазине
+      parameters:
+      - description: ID магазина
+        in: path
+        name: store_id
+        required: true
+        type: integer
+      - description: Обновленные данные магазина
+        in: body
+        name: store
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Store'
+      responses:
+        "200":
+          description: Магазин обновлен
+          schema:
+            $ref: '#/definitions/entities.Store'
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "404":
+          description: Магазин не найден
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Обновление магазина
+      tags:
+      - stores
+  /stores/{store_id}/categories:
+    get:
+      description: Возвращает все категории конкретного магазина
+      parameters:
+      - description: ID магазина
+        in: path
+        name: store_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: Список категорий
+          schema:
+            items:
+              $ref: '#/definitions/entities.Category'
+            type: array
+        "400":
+          description: Неверный ID магазина
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Получение категорий магазина
+      tags:
+      - categories
+    post:
+      description: Связывает категорию с магазином
+      parameters:
+      - description: ID магазина
+        in: path
+        name: store_id
+        required: true
+        type: integer
+      - description: ID категории
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      responses:
+        "200":
+          description: Категория привязана
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Привязка категории к магазину
+      tags:
+      - stores
+  /stores/{store_id}/categories/{category_id}:
+    delete:
+      description: Отвязывает категорию от магазина
+      parameters:
+      - description: ID магазина
+        in: path
+        name: store_id
+        required: true
+        type: integer
+      - description: ID категории
+        in: path
+        name: category_id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Категория отвязана
+          schema:
+            type: string
+        "400":
+          description: Неверные ID
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Отвязка категории от магазина
+      tags:
+      - stores
+  /stores/{store_id}/products:
+    post:
+      description: Создает новый продукт в магазине
+      parameters:
+      - description: ID магазина
+        in: path
+        name: store_id
+        required: true
+        type: integer
+      - description: Данные продукта
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Product'
+      responses:
+        "201":
+          description: Продукт создан
+          schema:
+            $ref: '#/definitions/entities.Product'
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Создание продукта
+      tags:
+      - products
+  /stores/{store_id}/products/{id}:
+    put:
+      description: Обновляет информацию о продукте
+      parameters:
+      - description: ID продукта
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID магазина
+        in: path
+        name: store_id
+        required: true
+        type: integer
+      - description: Обновленные данные продукта
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Product'
+      responses:
+        "200":
+          description: Продукт обновлен
+          schema:
+            $ref: '#/definitions/entities.Product'
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "404":
+          description: Продукт не найден
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Обновление продукта
+      tags:
+      - products
+  /stores/search:
+    post:
+      description: Возвращает список магазинов с пагинацией и фильтрацией
+      parameters:
+      - description: Параметры поиска
+        in: body
+        name: searchParams
+        required: true
+        schema:
+          $ref: '#/definitions/entities.StoreSearchParams'
+      responses:
+        "200":
+          description: Список магазинов
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Получение магазинов по фильтрам
+      tags:
+      - stores
+  /users/{id}:
+    get:
+      description: Возвращает информацию о пользователе по его ID
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: Информация о пользователе
+          schema:
+            $ref: '#/definitions/entities.User'
+        "400":
+          description: Неверный ID
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "404":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Получение пользователя по ID
+      tags:
+      - users
+  /users/login:
+    post:
+      description: Аутентифицирует пользователя и возвращает токены доступа
+      parameters:
+      - description: Данные для входа
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/entities.LoginCredentials'
+      responses:
+        "200":
+          description: Успешный вход
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "401":
+          description: Неверные учетные данные
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Вход пользователя
+      tags:
+      - users
+  /users/logout:
+    post:
+      description: Завершает сессию пользователя
+      parameters:
+      - description: Access token
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      responses:
+        "200":
+          description: Успешный выход
+          schema:
+            type: string
+        "400":
+          description: Ошибка при выходе
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Выход из системы
+      tags:
+      - users
+  /users/refresh:
+    post:
+      description: Обновляет токены доступа используя refresh token
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      responses:
+        "200":
+          description: Токены обновлены
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный refresh token
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Обновление сессии
+      tags:
+      - users
+  /users/register:
+    post:
+      description: Создает нового пользователя в системе
+      parameters:
+      - description: Данные пользователя
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/entities.User'
+      responses:
+        "201":
+          description: Пользователь успешно зарегистрирован
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errorhandling.ErrorResponse'
+      summary: Регистрация пользователя
+      tags:
+      - users
+securityDefinitions:
+  BearerAuth:
+    description: Введите "Bearer" за которым следует пробел и JWT токен.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

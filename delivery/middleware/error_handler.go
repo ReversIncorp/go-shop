@@ -16,13 +16,13 @@ func ErrorHandlerMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return nil
 		}
 
-		var appErr *errorHandling.ResponseError
+		var appErr *errorHandling.ErrorResponse
 		if errors.As(err, &appErr) {
 			return c.JSON(appErr.Code, appErr)
 		}
 
 		errorHandling.LogErrorWithTracer(err) // Логируем ошибку со стектрейсом.
-		return c.JSON(http.StatusInternalServerError, &errorHandling.ResponseError{
+		return c.JSON(http.StatusInternalServerError, &errorHandling.ErrorResponse{
 			Code:    errorHandling.ErrInternalServerError.Code,
 			Details: errorHandling.ErrInternalServerError.Details,
 		})
