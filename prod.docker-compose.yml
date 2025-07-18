@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: marketplace
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_DB: go-shop
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend-network
+
+  redis: 
+    image: redis:latest
+    networks:
+      - backend-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: ProdDockerfile
+    ports:
+      - 8080:8080
+    networks:
+      - backend-network
+    depends_on:
+      - db
+      - redis
+
+networks:
+  backend-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

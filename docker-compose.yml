@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: dev-db
+    environment:
+      POSTGRES_USER: marketplace
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_DB: go-shop
+    ports:
+      - 5432:5432
+    volumes:
+      - dev_postgres_data:/var/lib/postgresql/data
+    networks:
+      - dev-backend-network
+
+  redis: 
+    image: redis:latest
+    container_name: dev-redis
+    ports:
+      - 6379:6379
+    networks:
+      - dev-backend-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dev-backend
+    ports:
+      - 8080:8080
+    networks:
+      - dev-backend-network
+    depends_on:
+      - db
+      - redis
+
+networks:
+  dev-backend-network:
+    driver: bridge
+
+volumes:
+  dev_postgres_data:
