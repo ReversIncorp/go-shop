@@ -135,9 +135,6 @@ info:
     url: https://github.com/ReversIncorp/go-shop
   description: REST API для маркетплейса на Go с JWT аутентификацией, управлением
     магазинами, продуктами и категориями
-  license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Go Shop API
   version: "1.0"

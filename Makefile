@@ -24,7 +24,13 @@ sort:
 	goimports -w .
 
 swagger:
-	swag init -g app/main.go -o api/swagger/api
+	@echo "Проверка установки swag..."
+	@if ! command -v swag &> /dev/null; then \
+		echo "Установка swag..."; \
+		go install github.com/swaggo/swag/cmd/swag@latest; \
+	fi
+	@echo "Генерация Swagger документации..."
+	$(shell go env GOPATH)/bin/swag init -g app/main.go -o api/swagger/api
 
 test:
 	go test ./...
@@ -39,6 +45,27 @@ swagger-update:
 codegen:
 # make swagger-update
 #	oapi-codegen --config=./api/gen_configs/appinfo/server_cfg.yaml -o ./internal/router/http/appinfo/app_info.gen.go ./api/swagger/api/backend/app_info.yaml
+
+	@echo "Проверка установки OpenAPI Generator..."
+	@if ! command -v openapi-generator-cli &> /dev/null; then \
+		echo "Установка OpenAPI Generator..."; \
+		if command -v npm &> /dev/null; then \
+			npm install @openapitools/openapi-generator-cli -g; \
+		else \
+			echo "Ошибка: npm не установлен. Установите Node.js и npm"; \
+			exit 1; \
+		fi; \
+	fi
+	@echo "Генерация Flutter клиента..."
+	openapi-generator-cli generate \
+		-i api/swagger/api/swagger.yaml \
+		-g dart-dio \
+		-o clients/flutter \
+		--additional-properties=pubName=go_shop_api,pubVersion=1.0.0,pubDescription="Go Shop API Client"
+
+# Генерация всех клиентов
+generate-clients: flutter-client
+	@echo "Все клиенты сгенерированы"
 
 gqlgen:
 	go run github.com/99designs/gqlgen generate

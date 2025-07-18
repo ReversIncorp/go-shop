@@ -19,9 +19,6 @@ import (
 // @contact.url https://github.com/ReversIncorp/go-shop
 // @contact.email a.savko.developer@goshop.com
 
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-
 // @host localhost:8080
 // @BasePath /
 
