@@ -30,6 +30,17 @@ func NewProductHandler(
 }
 
 // CreateProduct обрабатывает запрос на создание продукта.
+// @Summary Создание продукта
+// @Description Создает новый продукт в магазине
+// @Tags products
+// @Consumes application/json
+// @Produces application/json
+// @Param store_id path int true "ID магазина"
+// @Param product body entities.Product true "Данные продукта"
+// @Success 201 {object} entities.Product "Продукт создан"
+// @Failure 400 {object} errorhandling.ResponseError "Ошибка валидации"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /stores/{store_id}/products [post].
 func (h *ProductHandler) CreateProduct(c echo.Context) error {
 	var product entities.Product
 	if err := c.Bind(&product); err != nil {
@@ -51,6 +62,16 @@ func (h *ProductHandler) CreateProduct(c echo.Context) error {
 }
 
 // GetProductByID обрабатывает запрос на получение продукта по ID.
+// @Summary Получение продукта по ID
+// @Description Возвращает информацию о продукте по его ID
+// @Tags products
+// @Produces application/json
+// @Param id path int true "ID продукта"
+// @Success 200 {object} entities.Product "Информация о продукте"
+// @Failure 400 {object} errorhandling.ResponseError "Неверный ID"
+// @Failure 404 {object} errorhandling.ResponseError "Продукт не найден"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /products/{id} [get].
 func (h *ProductHandler) GetProductByID(c echo.Context) error {
 	id := c.Param("id")
 	productID, err := strconv.ParseUint(id, 10, 64)
@@ -66,6 +87,19 @@ func (h *ProductHandler) GetProductByID(c echo.Context) error {
 }
 
 // UpdateProduct обрабатывает запрос на обновление продукта.
+// @Summary Обновление продукта
+// @Description Обновляет информацию о продукте
+// @Tags products
+// @Consumes application/json
+// @Produces application/json
+// @Param id path int true "ID продукта"
+// @Param store_id path int true "ID магазина"
+// @Param product body entities.Product true "Обновленные данные продукта"
+// @Success 200 {object} entities.Product "Продукт обновлен"
+// @Failure 400 {object} errorhandling.ResponseError "Ошибка валидации"
+// @Failure 404 {object} errorhandling.ResponseError "Продукт не найден"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /stores/{store_id}/products/{id} [put].
 func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 	var product entities.Product
 
@@ -96,6 +130,16 @@ func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 }
 
 // DeleteProduct обрабатывает запрос на удаление продукта.
+// @Summary Удаление продукта
+// @Description Удаляет продукт из системы
+// @Tags products
+// @Produces application/json
+// @Param id path int true "ID продукта"
+// @Success 204 {string} string "Продукт удален"
+// @Failure 400 {object} errorhandling.ResponseError "Неверный ID"
+// @Failure 404 {object} errorhandling.ResponseError "Продукт не найден"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /products/{id} [delete].
 func (h *ProductHandler) DeleteProduct(c echo.Context) error {
 	id := c.Param("id")
 	productID, err := strconv.ParseUint(id, 10, 64)
@@ -109,6 +153,17 @@ func (h *ProductHandler) DeleteProduct(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
+// GetProductsByFilters обрабатывает запрос на получение продуктов по фильтрам.
+// @Summary Получение продуктов по фильтрам
+// @Description Возвращает список продуктов с пагинацией и фильтрацией
+// @Tags products
+// @Consumes application/json
+// @Produces application/json
+// @Param searchParams body entities.ProductSearchParams true "Параметры поиска"
+// @Success 200 {object} map[string]interface{} "Список продуктов"
+// @Failure 400 {object} errorhandling.ResponseError "Ошибка валидации"
+// @Failure 500 {object} errorhandling.ResponseError "Внутренняя ошибка сервера"
+// @Router /products/search [post].
 func (h *ProductHandler) GetProductsByFilters(c echo.Context) error {
 	var searchParams entities.ProductSearchParams
 
