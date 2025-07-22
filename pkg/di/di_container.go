@@ -1,7 +1,6 @@
 package di
 
 import (
-	"database/sql"
 	"marketplace/delivery/handlers"
 	"marketplace/delivery/middleware"
 	"marketplace/internal/data/repository"
@@ -17,6 +16,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/ztrue/tracerr"
 	"go.uber.org/dig"
+	"gorm.io/gorm"
 )
 
 var container = dig.New()
@@ -36,11 +36,11 @@ func RegisterDatabases(container *dig.Container) error {
 	}
 
 	// Создаем экземпляр PostgreSQL и проверяем соединение
-	postgresDB, err := database.OpenPostgreSQL()
+	gormDB, err := database.OpenPostgreSQL()
 	if err != nil {
 		return tracerr.Errorf("failed to connect to PostgreSQL: %w", err)
 	}
-	if err = container.Provide(func() *sql.DB { return postgresDB }); err != nil {
+	if err = container.Provide(func() *gorm.DB { return gormDB }); err != nil {
 		return tracerr.Errorf("failed to register PostgreSQL client: %w", err)
 	}
 

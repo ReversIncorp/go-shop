@@ -34,7 +34,7 @@ func (h *UserHandler) Register(c echo.Context) error {
 	}
 
 	// Вызов метода Register и получение токенов
-	tokens, err := h.userUseCase.Register(user, c)
+	tokens, err := h.userUseCase.Register(&user, c)
 	if err != nil {
 		return err
 	}

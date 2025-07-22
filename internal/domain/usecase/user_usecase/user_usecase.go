@@ -25,7 +25,7 @@ func NewUserUseCase(userRepo repository.UserRepository, tokenRepo repository.JWT
 }
 
 // Register Реализация метода Register.
-func (u *UserUseCase) Register(user entities.User, ctx echo.Context) (*entities.SessionDetails, error) {
+func (u *UserUseCase) Register(user *entities.User, ctx echo.Context) (*entities.SessionDetails, error) {
 	existingUser, err := u.userRepo.FindByEmail(user.Email)
 	if err == nil && existingUser.ID != 0 {
 		return nil, errorHandling.ErrUserExists

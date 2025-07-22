@@ -24,7 +24,7 @@ func NewProductUseCase(
 }
 
 // CreateProduct создает новый продукт.
-func (p *ProductUseCase) CreateProduct(product entities.Product) error {
+func (p *ProductUseCase) CreateProduct(product *entities.Product) error {
 	categoryBelongs, err := p.storeRepo.IsCategoryAttached(product.StoreID, product.CategoryID)
 	if err != nil || !categoryBelongs {
 		return errorHandling.ErrCategoryNotAttached
@@ -55,7 +55,7 @@ func (p *ProductUseCase) UpdateProduct(product entities.Product) error {
 		return errorHandling.ErrProductNotBelongsToStore
 	}
 
-	err = p.productRepo.Save(product)
+	err = p.productRepo.Save(&product)
 	if err != nil {
 		return err
 	}

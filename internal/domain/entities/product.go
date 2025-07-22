@@ -3,7 +3,7 @@ package entities
 import "time"
 
 type Product struct {
-	ID          uint64    `json:"id"`
+	ID          uint64    `gorm:"primaryKey" json:"id"`
 	Name        string    `json:"name" validate:"required"`
 	Description string    `json:"description" validate:"required"`
 	Price       float64   `json:"price" validate:"required"`
@@ -12,4 +12,6 @@ type Product struct {
 	StoreID     uint64    `json:"store_id"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+	Category    Category  `gorm:"foreignKey:CategoryID" json:"category,omitempty"`
+	Store       Store     `gorm:"foreignKey:StoreID" json:"store,omitempty"`
 }

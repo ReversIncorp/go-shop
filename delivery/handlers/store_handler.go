@@ -42,11 +42,16 @@ func (h *StoreHandler) CreateStore(c echo.Context) error {
 		return errorHandling.ErrMissingUserFromToken
 	}
 
-	if err := h.storeUseCase.CreateStore(store, uint64(uid)); err != nil {
+	if err := h.storeUseCase.CreateStore(&store, uint64(uid)); err != nil {
 		return errorHandling.ErrInternalServerError
 	}
 
-	return c.JSON(http.StatusCreated, store)
+	created, err := h.storeUseCase.GetStoreByID(store.ID)
+	if err != nil {
+		return errorHandling.ErrInternalServerError
+	}
+
+	return c.JSON(http.StatusCreated, created)
 }
 
 // GetStoreByID обрабатывает запрос на получение магазина по ID.
@@ -83,7 +88,12 @@ func (h *StoreHandler) UpdateStore(c echo.Context) error {
 		return errorHandling.ErrInternalServerError
 	}
 
-	return c.JSON(http.StatusOK, store)
+	updated, err := h.storeUseCase.GetStoreByID(storeID)
+	if err != nil {
+		return errorHandling.ErrInternalServerError
+	}
+
+	return c.JSON(http.StatusOK, updated)
 }
 
 // DeleteStore обрабатывает запрос на удаление магазина.
