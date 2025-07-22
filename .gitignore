@@ -37,3 +37,5 @@ Thumbs.db
 *.swo
 *.bak
 .env
+dendrite_matrix_key.pem
+dendrite_config.yaml
