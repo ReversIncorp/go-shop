@@ -3,9 +3,9 @@ services:
     image: postgres:latest
     container_name: dev-db
     environment:
-      POSTGRES_USER: marketplace
-      POSTGRES_PASSWORD: 12345
-      POSTGRES_DB: go-shop
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - 5432:5432
     volumes:
@@ -33,6 +33,9 @@ services:
     depends_on:
       - db
       - redis
+    env_file:
+      - .env
+
   dendrite:
     image: matrixdotorg/dendrite-monolith:latest
     container_name: dev-dendrite
