@@ -29,9 +29,22 @@ services:
     env_file:
       - .env
 
+  dendrite:
+    image: matrixdotorg/dendrite-monolith:latest
+    container_name: dendrite
+    volumes:
+      - ./dendrite_config.yaml:/etc/dendrite/dendrite.yaml:ro
+      - ./dendrite_matrix_key.pem:/etc/dendrite/matrix_key.pem:ro
+      - dendrite_data:/var/dendrite
+    networks:
+      - backend-network
+    command: --config /etc/dendrite/dendrite.yaml --really-enable-open-registration
+    restart: unless-stopped
+
 networks:
   backend-network:
     driver: bridge
 
 volumes:
   postgres_data:
+  dendrite_data:
