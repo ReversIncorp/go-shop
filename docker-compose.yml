@@ -18,6 +18,8 @@ services:
     container_name: dev-redis
     ports:
       - 6379:6379
+    volumes:
+      - dev_redis_data:/data
     networks:
       - dev-backend-network
 
@@ -57,3 +59,4 @@ networks:
 volumes:
   dev_postgres_data:
   dev_dendrite_data:
+  dev_redis_data:

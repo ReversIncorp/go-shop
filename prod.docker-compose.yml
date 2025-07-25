@@ -12,6 +12,8 @@ services:
 
   redis: 
     image: redis:latest
+    volumes:
+      - redis_data:/data
     networks:
       - backend-network
 
@@ -48,3 +50,4 @@ networks:
 volumes:
   postgres_data:
   dendrite_data:
+  redis_data:
