@@ -1,74 +1,47 @@
 package repository
 
 import (
-	"database/sql"
 	"errors"
-	"fmt"
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
 	errorHandling "marketplace/pkg/error_handling"
 
 	"github.com/ztrue/tracerr"
+	"gorm.io/gorm"
 )
 
 type userRepositoryImpl struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
-func NewUserRepository(db *sql.DB) repository.UserRepository {
+func NewUserRepository(db *gorm.DB) repository.UserRepository {
 	return &userRepositoryImpl{
 		db: db,
 	}
 }
 
-func (r *userRepositoryImpl) Create(user entities.User) (uint64, error) {
-	var existingUserID uint64
-	query := `SELECT id FROM users WHERE email = $1`
-	err := r.db.QueryRow(query, user.Email).Scan(&existingUserID)
+func (r *userRepositoryImpl) Create(user *entities.User) (uint64, error) {
+	// Проверка на уникальность email
+	var existingUser entities.User
+	err := r.db.Where("email = ?", user.Email).First(&existingUser).Error
 	if err == nil {
 		return 0, tracerr.Wrap(errors.New("user already exists"))
-	} else if !errors.Is(err, sql.ErrNoRows) {
-		return 0, tracerr.Wrap(fmt.Errorf("failed to check existing user: %w", err))
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return 0, tracerr.Wrap(err)
 	}
 
-	insertQuery := `INSERT INTO users 
-    (name, 
-     email, 
-     password, 
-     is_seller) 
-	VALUES ($1, $2, $3, $4) RETURNING id`
-	var newUserID uint64
-	err = r.db.QueryRow(insertQuery,
-		user.Name,
-		user.Email,
-		user.Password,
-		user.IsSeller).Scan(&newUserID)
-
-	if err != nil {
-		return 0, tracerr.Wrap(fmt.Errorf("failed to create user: %w", err))
+	if err := r.db.Create(user).Error; err != nil {
+		return 0, tracerr.Wrap(err)
 	}
-
-	return newUserID, nil
+	return user.ID, nil
 }
 
 func (r *userRepositoryImpl) FindByEmail(email string) (entities.User, error) {
 	var user entities.User
-	query := `SELECT 
-    	id,
-       name, 
-       email,
-       password,
-       is_seller
-	          FROM users WHERE email = $1`
-	err := r.db.QueryRow(query, email).Scan(
-		&user.ID,
-		&user.Name,
-		&user.Email,
-		&user.Password,
-		&user.IsSeller)
-
+	err := r.db.
+		Where("email = ?", email).First(&user).Error
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return entities.User{}, errorHandling.ErrUserNotFound
 		}
 		return entities.User{}, tracerr.Wrap(err)
@@ -78,22 +51,10 @@ func (r *userRepositoryImpl) FindByEmail(email string) (entities.User, error) {
 
 func (r *userRepositoryImpl) FindByID(id uint64) (entities.User, error) {
 	var user entities.User
-	query := `SELECT 
-    	id, 
-       name, 
-       email, 
-       password, 
-       is_seller 
-	          FROM users WHERE id = $1`
-	err := r.db.QueryRow(query, id).Scan(
-		&user.ID,
-		&user.Name,
-		&user.Email,
-		&user.Password,
-		&user.IsSeller)
-
+	err := r.db.
+		First(&user, id).Error
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return entities.User{}, errorHandling.ErrUserNotFound
 		}
 		return entities.User{}, tracerr.Wrap(err)

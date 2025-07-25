@@ -46,10 +46,16 @@ func (h *CategoryHandler) CreateCategory(c echo.Context) error {
 		return errorHandling.ErrMissingUserFromToken
 	}
 
-	if err := h.categoryUseCase.CreateCategory(category, uint64(uid)); err != nil {
-		return tracerr.Wrap(err)
+	if err := h.categoryUseCase.CreateCategory(&category, uint64(uid)); err != nil {
+		tracerr.Wrap(err)
 	}
-	return c.JSON(http.StatusCreated, category)
+
+	created, err := h.categoryUseCase.GetCategoryByID(category.ID)
+	if err != nil {
+		return errorHandling.ErrInternalServerError
+	}
+
+	return c.JSON(http.StatusCreated, created)
 }
 
 // DeleteCategory обрабатывает запрос на удаление категории.

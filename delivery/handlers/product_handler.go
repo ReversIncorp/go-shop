@@ -55,10 +55,16 @@ func (h *ProductHandler) CreateProduct(c echo.Context) error {
 
 	product.StoreID = storeID
 
-	if err = h.productUseCase.CreateProduct(product); err != nil {
+	if err = h.productUseCase.CreateProduct(&product); err != nil {
 		return tracerr.Wrap(err)
 	}
-	return c.JSON(http.StatusCreated, product)
+
+	created, err := h.productUseCase.GetProductByID(product.ID)
+	if err != nil {
+		return errorHandling.ErrInternalServerError
+	}
+
+	return c.JSON(http.StatusCreated, created)
 }
 
 // GetProductByID обрабатывает запрос на получение продукта по ID.
@@ -126,7 +132,12 @@ func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-	return c.JSON(http.StatusOK, product)
+	updated, err := h.productUseCase.GetProductByID(productID)
+	if err != nil {
+		return errorHandling.ErrInternalServerError
+	}
+
+	return c.JSON(http.StatusOK, updated)
 }
 
 // DeleteProduct обрабатывает запрос на удаление продукта.

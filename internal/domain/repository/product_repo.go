@@ -5,7 +5,7 @@ import (
 )
 
 type ProductRepository interface {
-	Save(product entities.Product) error
+	Save(product *entities.Product) error
 	Update(product entities.Product) error
 	Delete(id uint64) error
 

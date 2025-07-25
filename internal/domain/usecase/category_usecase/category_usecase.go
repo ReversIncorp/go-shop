@@ -23,7 +23,7 @@ func NewCategoryUseCase(
 	}
 }
 
-func (c *CategoryUseCase) CreateCategory(category entities.Category, uid uint64) error {
+func (c *CategoryUseCase) CreateCategory(category *entities.Category, uid uint64) error {
 	userData, err := c.userRepo.FindByID(uid)
 	if err != nil || !userData.IsSeller {
 		return errorHandling.ErrUserNotSeller

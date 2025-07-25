@@ -27,7 +27,7 @@ func NewStoreUseCase(
 }
 
 // CreateStore создает новый магазин.
-func (s *StoreUseCase) CreateStore(store entities.Store, userID uint64) error {
+func (s *StoreUseCase) CreateStore(store *entities.Store, userID uint64) error {
 	err := s.storeRepo.Save(store, userID)
 	if err != nil {
 		return tracerr.Wrap(err)
