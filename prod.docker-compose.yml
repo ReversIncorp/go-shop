@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend-network
+
+  redis: 
+    image: redis:latest
+    networks:
+      - backend-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: ProdDockerfile
+    ports:
+      - 8080:8080
+    networks:
+      - backend-network
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+
+networks:
+  backend-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

@@ -4,6 +4,8 @@ import (
 	"marketplace/internal/domain/entities"
 	"marketplace/internal/domain/repository"
 	errorHandling "marketplace/pkg/error_handling"
+
+	"github.com/ztrue/tracerr"
 )
 
 type CategoryUseCase struct {
@@ -29,14 +31,18 @@ func (c *CategoryUseCase) CreateCategory(category *entities.Category, uid uint64
 
 	err = c.categoryRepo.Save(category)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return nil
 }
 
 func (c *CategoryUseCase) GetCategoryByID(id uint64) (entities.Category, error) {
-	return c.categoryRepo.FindByID(id)
+	category, err := c.categoryRepo.FindByID(id)
+	if err != nil {
+		return category, tracerr.Wrap(err)
+	}
+	return category, nil
 }
 
 func (c *CategoryUseCase) DeleteCategory(id, uid uint64) error {
@@ -46,22 +52,33 @@ func (c *CategoryUseCase) DeleteCategory(id, uid uint64) error {
 	}
 
 	exists, err := c.categoryRepo.IsExist(id)
-	if err != nil || !exists {
+	if err != nil {
+		return tracerr.Wrap(err)
+	}
+	if !exists {
 		return errorHandling.ErrCategoryNotFound
 	}
 
 	err = c.categoryRepo.Delete(id)
 	if err != nil {
-		return err
+		return tracerr.Wrap(err)
 	}
 
 	return nil
 }
 
 func (c *CategoryUseCase) GetAllCategoriesByStore(id uint64) ([]entities.Category, error) {
-	return c.categoryRepo.FindAllByStore(id)
+	categories, err := c.categoryRepo.FindAllByStore(id)
+	if err != nil {
+		return nil, tracerr.Wrap(err)
+	}
+	return categories, nil
 }
 
 func (c *CategoryUseCase) GetAllCategories() ([]entities.Category, error) {
-	return c.categoryRepo.FindAll()
+	categories, err := c.categoryRepo.FindAll()
+	if err != nil {
+		return nil, tracerr.Wrap(err)
+	}
+	return categories, nil
 }

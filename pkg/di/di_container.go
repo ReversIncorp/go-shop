@@ -14,6 +14,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
+	echoSwagger "github.com/swaggo/echo-swagger"
 	"github.com/ztrue/tracerr"
 	"go.uber.org/dig"
 	"gorm.io/gorm"
@@ -190,5 +191,8 @@ func RegisterRoutes(container *dig.Container, e *echo.Echo) error {
 	authorizedScope.GET("/categories/:id", categoryHandler.GetCategoryByID)
 	authorizedScope.GET("/categories", categoryHandler.GetAllCategories)
 	authorizedScope.DELETE("/categories/:id", categoryHandler.DeleteCategory)
+
+	// Добавляем маршрут для Swagger UI
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 	return nil
 }

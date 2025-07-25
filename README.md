@@ -3,7 +3,11 @@
 │   └── main.go                   # Главный файл
 ├── api                           # API протоколы
 │   └── swagger                   # Папка для Swagger
-│       └── api                   # Папка для всех внутренних протоколов
+│       └── api                   # Сгенерированная Swagger документация
+│           ├── swagger.json     # JSON спецификация API
+│           ├── swagger.yaml     # YAML спецификация API
+│           └── docs.go          # Go файл с встроенной документацией
+├── docs                          # Устаревшая папка (перенесено в api/swagger/api)
 ├── bin                           # Бинарники нужные при разработке
 │   └── golangci-lint             # Линтер 
 ├── config                        # Конфигурационные файлы приложения
@@ -71,6 +75,10 @@
 	- migrations: Директория с SQL-файлами для управления структурой базы данных.
   - **di:**
 	- di_container.go: Регистрация зависимостей через Dependency Injection (DI).
+  - **error_handling:**
+	- error_response.go: Единая структура для представления ошибок API
+	- errors.go: Предопределенные ошибки приложения
+	- log.go: Логирование ошибок с трейсингом
   - **utils:**
 	Вспомогательные функции и модули, например:
 	- Обработка ошибок.
@@ -92,6 +100,8 @@
 - **Database** - PostgreSQL
 - **Migrations** - Goose 
 - **Cache** - Redis
+- **API Documentation** - Swagger (swaggo)
+- **Web Framework** - Echo
 
 # Документация по запуску проекта
 
@@ -225,6 +235,53 @@
     Создает новый файл миграции с указанным именем.
 ```bash
   goose -dir pkg/database/migrations create <migration_name> sql
+```
+
+## Swagger документация
+
+### Установка Swagger CLI
+Установите инструмент для генерации Swagger документации:
+```bash
+go install github.com/swaggo/swag/cmd/swag@latest
+```
+
+### Генерация документации
+Сгенерируйте Swagger документацию из аннотаций в коде:
+```bash
+make swagger
+```
+или
+```bash
+swag init -g app/main.go -o api/swagger/api
+```
+
+### Просмотр документации
+После запуска сервера документация доступна по адресу:
+- **Swagger UI**: http://localhost:8080/swagger/index.html
+- **JSON спецификация**: http://localhost:8080/swagger/doc.json
+
+### Структура ошибок
+API использует единую структуру для ошибок `ResponseError` из пакета `errorhandling`:
+```go
+type ResponseError struct {
+    Code    int    `json:"code"`    // HTTP статус-код
+    Details string `json:"details"` // Сообщение для пользователя
+    Err     error  `json:"-"`       // Внутренняя ошибка (не отправляется клиенту)
+}
+```
+
+### Аннотации Swagger
+Все хендлеры содержат аннотации Swagger для автоматической генерации документации:
+```go
+// @Summary Создать пользователя
+// @Description Регистрирует нового пользователя в системе
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body entities.User true "Данные пользователя"
+// @Success 201 {object} entities.User
+// @Failure 400 {object} errorhandling.ResponseError
+// @Router /users [post]
 ```
 
 ## GIT

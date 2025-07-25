@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
+	"github.com/ztrue/tracerr"
 )
 
 type UserUseCase struct {
@@ -124,7 +125,7 @@ func (u *UserUseCase) ValidateToken(
 	tokenString string,
 	key []byte,
 	tokenType enums.Token,
-) (*jwt.Token, error) {
+) (*jwt.Token, *errorHandling.ResponseError) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errorHandling.ErrInvalidExpiredToken
@@ -198,11 +199,11 @@ func (u *UserUseCase) createSession(
 
 	accessToken, err := GenerateToken(userID, sessionID, enums.Access, config.GetConfig().JWTKey)
 	if err != nil {
-		return nil, err
+		return nil, tracerr.Wrap(err)
 	}
 	refreshToken, err := GenerateToken(userID, sessionID, enums.Refresh, config.GetConfig().JWTKey)
 	if err != nil {
-		return nil, err
+		return nil, tracerr.Wrap(err)
 	}
 
 	session.ExpiresAt = time.Now().Add(enums.Refresh.Duration()).Unix()
@@ -214,7 +215,7 @@ func (u *UserUseCase) createSession(
 		sessionID,
 		session,
 	); err != nil {
-		return nil, err
+		return nil, tracerr.Wrap(err)
 	}
 
 	return session, nil
