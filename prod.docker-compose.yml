@@ -12,13 +12,15 @@ services:
 
   redis: 
     image: redis:latest
+    volumes:
+      - redis_data:/data
     networks:
       - backend-network
 
   backend:
     build:
       context: .
-      dockerfile: ProdDockerfile
+      dockerfile: Dockerfile
     ports:
       - 8080:8080
     networks:
@@ -48,3 +50,4 @@ networks:
 volumes:
   postgres_data:
   dendrite_data:
+  redis_data:
